@@ -254,10 +254,13 @@ public class GameRoom extends javax.swing.JFrame {
     }
 
     private void noButtonActionPerformed(ActionEvent evt) {
-        ClientRun.socketHandler.declinePlayAgain();
-        answer = true;
-        hideAskPlayAgain();
+    ClientRun.socketHandler.declinePlayAgain();
+    answer = true;
+    if (waitingClientTimer != null) {
+        waitingClientTimer.cancel(); // Hủy bỏ bộ đếm thời gian
     }
+    hideAskPlayAgain();
+}
 
     public void setStartGame(int matchTimeLimit) {
         SwingUtilities.invokeLater(() -> {

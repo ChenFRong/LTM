@@ -150,7 +150,7 @@ public class Room {
                 return null;
             },
             1
-        );// Bắt đầu bộ đếm ngược
+        );// Bắt đầu bộ đ���m ngược
     }
 
     private void handleTimeoutPlayAgain() {
@@ -170,10 +170,11 @@ public class Room {
         }
     }
     
-    public void deleteRoom () {
+    public void deleteRoom() {
         if (waitingTimer != null) {
-        waitingTimer.cancel(); // Hủy bỏ bộ đếm thời gian
-     }
+            waitingTimer.cancel(); // Hủy bỏ bộ đếm thời gian
+            waitingTimer = null;
+        }
         client1.setJoinedRoom(null);
         client1.setcCompetitor(null);
         client2.setJoinedRoom(null);
@@ -191,6 +192,7 @@ public class Room {
         time = "00:00";
         waitingTime = "00:00";
         currentRound = 0;
+        waitingTimer.restart();
         isGameOver = false;
     }
     
@@ -199,14 +201,14 @@ public class Room {
         double diff1 = Math.abs(priceGuessClient1 - actualPrice);
         double diff2 = Math.abs(priceGuessClient2 - actualPrice);
         
-        double percentDiff1 = diff1 / actualPrice;
-        double percentDiff2 = diff2 / actualPrice;
+        // double percentDiff1 = diff1 / actualPrice;
+        // double percentDiff2 = diff2 / actualPrice;
         
         String roundWinner;
         double roundScoreClient1 = 0;
         double roundScoreClient2 = 0;
 
-        if (percentDiff1 <= WINNING_THRESHOLD && percentDiff2 <= WINNING_THRESHOLD) {
+        if (priceGuessClient1 <=actualPrice && priceGuessClient2 <= actualPrice) {
             if (diff1 < diff2) {
                 roundWinner = client1.getLoginUser();
                 roundScoreClient1 = 1;
@@ -218,24 +220,16 @@ public class Room {
                 roundScoreClient1 = 0.5;
                 roundScoreClient2 = 0.5;
             }
-        } else if (percentDiff1 <= WINNING_THRESHOLD) {
+        } else if (priceGuessClient1 <=actualPrice) {
             roundWinner = client1.getLoginUser();
             roundScoreClient1 = 1;
-        } else if (percentDiff2 <= WINNING_THRESHOLD) {
+        } else if (priceGuessClient2 <= actualPrice) {
             roundWinner = client2.getLoginUser();
             roundScoreClient2 = 1;
-        } else {
-            if (diff1 < diff2) {
-                roundWinner = client1.getLoginUser();
-                roundScoreClient1 = 0.5;
-            } else if (diff2 < diff1) {
-                roundWinner = client2.getLoginUser();
-                roundScoreClient2 = 0.5;
-            } else {
+        }  else{
                 roundWinner = "DRAW";
                 roundScoreClient1 = 0.5;
                 roundScoreClient2 = 0.5;
-            }
         }
         
         scoreClient1 += roundScoreClient1;
@@ -332,25 +326,20 @@ public class Room {
         }
     }
     
-    public String handlePlayAgain () {
-       if (playAgainC1 == null || playAgainC2 == null) {
-           return "WAITING";
-       } else if (playAgainC1 == null && playAgainC2 == null) {
-           return null; // Cả hai người chơi chưa trả lời
-        }else if (playAgainC1.equals("YES") && playAgainC2.equals("YES")) {
+    public String handlePlayAgain() {
+        if (playAgainC1 == null || playAgainC2 == null) {
+            return "WAITING";
+        } else if (playAgainC1.equals("NO") || playAgainC2.equals("NO")) {
+            if (waitingTimer != null) {
+                waitingTimer.cancel(); // Hủy bỏ bộ đếm thời gian
+                waitingTimer = null;
+            }
+            //deleteRoom();
+            return "NO";
+        } else if (playAgainC1.equals("YES") && playAgainC2.equals("YES")) {
             return "YES";
-        } else if (playAgainC1.equals("NO") && playAgainC2.equals("YES")) {
-//           ServerRun.clientManager.sendToAClient(client2.getLoginUser(), "ASK_PLAY_AGAIN;NO");
-//            deleteRoom();
-            return "NO";
-        } else if (playAgainC1.equals("YES") && playAgainC2.equals("NO")) {            
-//            ServerRun.clientManager.sendToAClient(client1.getLoginUser(), "ASK_PLAY_AGAIN;NO");           
-//            deleteRoom();
-            return "NO";
-        } 
-        else {
-            return "NO";
         }
+        return "NO";
     }
     
     

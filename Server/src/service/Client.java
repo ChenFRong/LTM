@@ -358,6 +358,7 @@ public class Client implements Runnable {
             joinedRoom.broadcast("ASK_PLAY_AGAIN;NO;");
             Room room = ServerRun.roomManager.find(joinedRoom.getId());
             if (room != null) {
+                joinedRoom.deleteRoom();
                 ServerRun.roomManager.remove(room);
             }
             this.joinedRoom = null;
