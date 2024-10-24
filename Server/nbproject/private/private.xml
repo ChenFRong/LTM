@@ -3,14 +3,15 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/D:/Ki1nam3/LTHDT_Java/Server/src/run/ServerRun.java</file>
-            <file>file:/D:/Ki1nam3/LTHDT_Java/Server/src/UserController/UserController.java</file>
-            <file>file:/D:/Ki1nam3/LTHDT_Java/Server/src/service/ClientManager.java</file>
-            <file>file:/D:/Ki1nam3/LTHDT_Java/Server/src/Database/Config.java</file>
-            <file>file:/D:/Ki1nam3/LTHDT_Java/Server/src/view/ServerView.java</file>
-            <file>file:/D:/Ki1nam3/LTHDT_Java/Server/src/service/GameRoom.java</file>
-            <file>file:/D:/Ki1nam3/LTHDT_Java/Server/src/service/Client.java</file>
-            <file>file:/D:/Ki1nam3/LTHDT_Java/Server/src/model/User.java</file>
+            <file>file:/D:/Ki1nam3/LTHDT_Java/Dang_sua/Server/src/view/ServerView.java</file>
+            <file>file:/D:/Ki1nam3/LTHDT_Java/Dang_sua/Server/src/run/ServerRun.java</file>
+            <file>file:/D:/Ki1nam3/LTHDT_Java/Dang_sua/Server/src/service/GameRoom.java</file>
+            <file>file:/D:/Ki1nam3/LTHDT_Java/Dang_sua/Server/src/service/Room.java</file>
+            <file>file:/D:/Ki1nam3/LTHDT_Java/Dang_sua/Server/src/model/UserModel.java</file>
+            <file>file:/D:/Ki1nam3/LTHDT_Java/Dang_sua/Server/src/controller/UserController.java</file>
+            <file>file:/D:/Ki1nam3/LTHDT_Java/Dang_sua/Server/src/service/ProductManager.java</file>
+            <file>file:/D:/Ki1nam3/LTHDT_Java/Dang_sua/Server/src/service/Client.java</file>
+            <file>file:/D:/Ki1nam3/LTHDT_Java/Dang_sua/Server/src/controller/ProductController.java</file>
         </group>
     </open-files>
 </project-private>

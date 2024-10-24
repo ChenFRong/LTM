@@ -10,18 +10,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import service.Client;
 import service.ClientManager;
-import service.GameRoom;
+import service.RoomManager;
 import view.ServerView;
+import service.ProductManager;
 
 public class ServerRun {
 
     public static volatile ClientManager clientManager; // Quản lý các client
     public static boolean isShutDown = false; // Biến kiểm tra trạng thái server
     public static ServerSocket ss; // Socket server
-    public static ConcurrentHashMap<String, GameRoom> gameRooms = new ConcurrentHashMap<>();
+    public static RoomManager roomManager;
+    public static volatile ProductManager productManager;
+    public static ConcurrentHashMap<String, RoomManager> gameRooms = new ConcurrentHashMap<>();
     public static ConcurrentLinkedQueue<Client> quickMatchQueue = new ConcurrentLinkedQueue<>();
 
     public ServerRun() {
@@ -32,6 +34,12 @@ public class ServerRun {
 
             // Khởi tạo client manager
             clientManager = new ClientManager();
+
+            // Khởi tạo room manager
+            roomManager = new RoomManager();
+
+            // Khởi tạo product manager
+            productManager = new ProductManager();
 
             // Tạo thread pool
             ThreadPoolExecutor executor = new ThreadPoolExecutor(
@@ -51,7 +59,7 @@ public class ServerRun {
 
                     // Tạo đối tượng Client mới cho mỗi kết nối
                     Client client = new Client(s);
-                    new Thread(client).start();
+                    executor.execute(client);
                 } catch (IOException ex) {
                     Logger.getLogger(ServerRun.class.getName()).log(Level.SEVERE, null, ex);
                     isShutDown = true; // Đóng server nếu có lỗi
@@ -80,5 +88,16 @@ public class ServerRun {
         serverView.setLocationRelativeTo(null);
         
         new ServerRun(); // Khởi động server
+    }
+
+    public static void shutdownServer() {
+        isShutDown = true;
+        try {
+            if (ss != null && !ss.isClosed()) {
+                ss.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

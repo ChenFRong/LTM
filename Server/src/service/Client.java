@@ -1,29 +1,30 @@
 package service;
 
-import UserController.UserController;
+import controller.UserController;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.sql.SQLException;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import run.ServerRun;
+import model.ProductModel;
 
 public class Client implements Runnable {
     private Socket socket;
     private DataInputStream dis;
     private DataOutputStream dos;
-
-    private static final ThreadLocal<String> threadLocalUser = new ThreadLocal<>();
-
     private String loginUser;
+    private Room joinedRoom;
+    private Client cCompetitor;
 
     public Client(Socket socket) throws IOException {
         this.socket = socket;
         this.dis = new DataInputStream(socket.getInputStream());
         this.dos = new DataOutputStream(socket.getOutputStream());
-        this.loginUser = null; // Khởi tạo là null
+        this.loginUser = null;
     }
 
     @Override
@@ -63,11 +64,22 @@ public class Client implements Runnable {
                     case "LOGOUT":
                         handleLogout();
                         break;
+                    case "START_GAME":
+                        onReceiveStartGame(received);
+                        break;
+                    case "NEXT_ROUND":
+                        onReceiveNextRound(received);
+                        break;
+                    case "SUBMIT_RESULT":
+                        onReceiveSubmitResult(received);
+                        break;
+                    case "ASK_PLAY_AGAIN":
+                        onReceiveAskPlayAgain(received);
+                        break;
                 }
                 
-                // Thêm log sau mỗi lần xử lý yêu cầu
                 System.out.println("After processing " + type + ", loginUser is: " + getLoginUser());
-            } catch (IOException ex) {
+            } catch (IOException | SQLException ex) {
                 Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
                 break;
             }
@@ -98,9 +110,9 @@ public class Client implements Runnable {
             setLoginUser(username);
             System.out.println("Login successful. loginUser set to: " + getLoginUser());
             
-            // Giả sử login trả về dạng "success;1000;5" với 1000 là điểm số, 5 là số trận thắng
+            // Giả sử login trả về dạng "success;1000.0;5" với 1000.0 là điểm số, 5 là số trận thắng
             String[] resultData = result.split(";");
-            int score = Integer.parseInt(resultData[2]);
+            float score = Float.parseFloat(resultData[2]);
             int wins = Integer.parseInt(resultData[3]);
             
             // Thêm client vào danh sách quản lý client của server
@@ -143,26 +155,24 @@ public class Client implements Runnable {
 
     private void handleCreateRoom() {
         String currentUser = getLoginUser();
-        System.out.println("Checking loginUser in handleCreateRoom: " + currentUser);
         if (currentUser == null) {
-            System.out.println("Cannot create room. User not logged in.");
             sendData("CREATE_ROOM_FAILED;User not logged in");
             return;
         }
-        checkLoginUser("handleCreateRoom");
         String roomCode = generateUniqueRoomCode();
-        GameRoom newRoom = new GameRoom(roomCode);
-        newRoom.addPlayer(this);
-        ServerRun.gameRooms.put(roomCode, newRoom);
-        sendData("ROOM_CREATED;" + roomCode);
-        logAction("ROOM_CREATED");
+        Room newRoom = ServerRun.roomManager.createRoom(roomCode);
+        if (newRoom.addClient(this)) {
+            joinedRoom = newRoom;
+            sendData("ROOM_CREATED;" + roomCode);
+            logAction("ROOM_CREATED");
+        } else {
+            sendData("CREATE_ROOM_FAILED;Unable to join the room");
+        }
     }
-
-    // ... existing code ...
 
     private void handleJoinRoom(String received) {
         String roomCode = received.split(";")[1];
-        GameRoom room = ServerRun.gameRooms.get(roomCode);
+        Room room = ServerRun.roomManager.getRoom(roomCode);
         
         if (room == null) {
             sendData("JOIN_FAILED;Room not found");
@@ -170,32 +180,25 @@ public class Client implements Runnable {
             return;
         }
         
-        if (!room.isFull()) {
-            boolean joined = room.addPlayer(this);
-            if (joined) {
-                sendData("ROOM_JOINED;" + roomCode);
-                logAction("ROOM_JOINED");
-                
-                if (room.getPlayers().size() == 2) {
-                    room.notifyPlayersAboutOpponents();
-                }
-            } else {
-                sendData("JOIN_FAILED;Unable to join the room");
-                logAction("JOIN_ROOM_FAILED");
+        if (ServerRun.roomManager.addPlayerToRoom(roomCode, this)) {
+            joinedRoom = room;
+            sendData("ROOM_JOINED;" + roomCode);
+            logAction("ROOM_JOINED");
+            
+            if (room.getSizeClient() == 2) {
+                ServerRun.roomManager.notifyPlayersAboutOpponents(roomCode);
             }
         } else {
-            sendData("JOIN_FAILED;Room is full");
+            sendData("JOIN_FAILED;Room is full or unable to join");
             logAction("JOIN_ROOM_FAILED");
         }
     }
-
-// ... existing code ...
 
     private String generateUniqueRoomCode() {
         String roomCode;
         do {
             roomCode = String.format("%04d", new Random().nextInt(10000));
-        } while (ServerRun.gameRooms.containsKey(roomCode));
+        } while (ServerRun.roomManager.getRoom(roomCode) != null);
         return roomCode;
     }
 
@@ -239,27 +242,23 @@ public class Client implements Runnable {
         synchronized (ServerRun.quickMatchQueue) {
             ServerRun.quickMatchQueue.offer(this);
             System.out.println("User " + getLoginUser() + " added to quick match queue");
-            if (ServerRun.quickMatchQueue.size() == 1) {
-                // Người chơi đầu tiên, đợi đối thủ
-                sendData("WAITING_FOR_OPPONENT");
-            } else if (ServerRun.quickMatchQueue.size() == 2) {
-                // Đã đủ 2 người chơi, tạo phòng
-                checkForMatch();
-            }
+            sendData("WAITING_FOR_OPPONENT");
+            checkForMatch();
         }
     }
 
     private void checkForMatch() {
         synchronized (ServerRun.quickMatchQueue) {
-            if (ServerRun.quickMatchQueue.size() == 2) {
+            if (ServerRun.quickMatchQueue.size() >= 2) {
                 Client player1 = ServerRun.quickMatchQueue.poll();
                 Client player2 = ServerRun.quickMatchQueue.poll();
                 if (player1 != null && player2 != null) {
                     String roomCode = generateUniqueRoomCode();
-                    GameRoom newRoom = new GameRoom(roomCode);
-                    newRoom.addPlayer(player1);
-                    newRoom.addPlayer(player2);
-                    ServerRun.gameRooms.put(roomCode, newRoom);
+                    Room newRoom = ServerRun.roomManager.createRoom(roomCode);
+                    newRoom.addClient(player1);
+                    newRoom.addClient(player2);
+                    player1.setJoinedRoom(newRoom);
+                    player2.setJoinedRoom(newRoom);
                     player1.sendData("QUICK_MATCH_FOUND;" + roomCode + ";" + player2.getLoginUser() + ";FIRST");
                     player2.sendData("QUICK_MATCH_FOUND;" + roomCode + ";" + player1.getLoginUser() + ";SECOND");
                     System.out.println("Quick match found: " + player1.getLoginUser() + " (Player 1) vs " + player2.getLoginUser() + " (Player 2) in room " + roomCode);
@@ -273,5 +272,113 @@ public class Client implements Runnable {
         this.loginUser = null;
         sendData("LOGOUT_SUCCESS");
         System.out.println("User logged out: " + this.getLoginUser());
+    }
+
+    private void onReceiveStartGame(String received) {
+        String[] splitted = received.split(";");
+        System.out.println(received);
+        String user1 = splitted[1];
+        String user2 = splitted[2];
+        String roomId = splitted[3];
+        
+        Room room = ServerRun.roomManager.find(roomId);
+        if (room != null) {
+            ProductModel product = ServerRun.productManager.getRandomProduct();
+            String productInfo = "START_GAME;success;" 
+                    + roomId + ";" 
+                    + product.getName() + ";" 
+                    + product.getImagePath();
+            room.broadcast(productInfo);
+            room.startGame();
+        }
+    }
+
+    private void onReceiveNextRound(String received) {
+        String[] splitted = received.split(";");
+        String roomId = splitted[2];
+        String productName = splitted[3];
+        String imagePath = splitted[4];
+        int round = Integer.parseInt(splitted[5]);
+
+        Room room = ServerRun.roomManager.find(roomId);
+        if (room != null) {
+            String msg = "NEXT_ROUND;success;" + roomId + ";" + productName + ";" + imagePath + ";" + round;
+            room.broadcast(msg);
+        }
+    }
+
+    private void onReceiveSubmitResult(String received) throws SQLException {
+        String[] splitted = received.split(";");
+        String user = splitted[1];
+        String competitor = splitted[2];
+        String roomId = splitted[3];
+        double priceGuess = Double.parseDouble(splitted[4]);
+        
+        Room room = ServerRun.roomManager.find(roomId);
+        if (room != null) {
+            if (user.equals(room.getClient1().getLoginUser())) {
+                room.setPriceGuessClient1(priceGuess);
+            } else if (user.equals(room.getClient2().getLoginUser())) {
+                room.setPriceGuessClient2(priceGuess);
+            }
+
+            if (room.getPriceGuessClient1() > 0 && room.getPriceGuessClient2() > 0) {
+                room.handleRoundEnd();
+            }
+        }
+    }
+
+    private void onReceiveAskPlayAgain(String received) throws SQLException {
+        String[] splitted = received.split(";");
+        String reply = splitted[1];
+        String user1 = splitted[2];
+        
+        if (joinedRoom == null) {
+            System.out.println("Error: Received ASK_PLAY_AGAIN but joinedRoom is null");
+            return;
+        }
+        
+        if (user1.equals(joinedRoom.getClient1().getLoginUser())) {
+            joinedRoom.setPlayAgainC1(reply);
+        } else if (user1.equals(joinedRoom.getClient2().getLoginUser())) {
+            joinedRoom.setPlayAgainC2(reply);
+        }
+        
+        String result = joinedRoom.handlePlayAgain();
+        if (result == null || "WAITING".equals(result)) {
+            // Chờ đợi phản hồi từ người chơi khác
+            return;
+        }
+        
+        if ("YES".equals(result)) {
+            joinedRoom.broadcast("ASK_PLAY_AGAIN;YES;" + joinedRoom.getClient1().loginUser + ";" + joinedRoom.getClient2().loginUser);
+            joinedRoom.resetRoom();
+            joinedRoom.startGame();
+        } else {
+            joinedRoom.broadcast("ASK_PLAY_AGAIN;NO;");
+            Room room = ServerRun.roomManager.find(joinedRoom.getId());
+            if (room != null) {
+                ServerRun.roomManager.remove(room);
+            }
+            this.joinedRoom = null;
+            this.cCompetitor = null;
+        }
+    }
+
+    // Thêm các getter và setter cần thiết
+    public Room getJoinedRoom() {
+        return joinedRoom;
+    }
+
+    public void setJoinedRoom(Room joinedRoom) {
+        this.joinedRoom = joinedRoom;
+    }
+
+    public Client getcCompetitor() {
+        return cCompetitor;
+    }
+
+    public void setcCompetitor(Client cCompetitor) {
+        this.cCompetitor = cCompetitor;
     }
 }

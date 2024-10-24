@@ -2,7 +2,7 @@ package model;
 
 import java.io.Serializable;
 
-public class User implements Serializable {
+public class UserModel implements Serializable {
     private static final long serialVersionUID = 1L;
 	
     private String userName;
@@ -15,23 +15,23 @@ public class User implements Serializable {
     private float avgCompetitor;
     private float avgTime;
     
-    public User() { }
+    public UserModel() { }
     
-    public User(String userName, String password, String status) {
+    public UserModel(String userName, String password, String status) {
     	super();
         this.userName = userName;
         this.password = password;
         this.status = status;
     }
     
-    public User(String userName, String password, float score) {
+    public UserModel(String userName, String password, float score) {
     	super();
         this.userName = userName;
         this.password = password;
         this.score = score;
     }
     
-    public User(String userName, String password, String status, float score) {
+    public UserModel(String userName, String password, String status, float score) {
     	super();
         this.userName = userName;
         this.password = password;

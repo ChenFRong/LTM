@@ -8,8 +8,9 @@ import view.HomeView;
 import view.PlaywithFriend;
 import java.util.HashMap;
 import view.GameRoom;
+import java.util.Map;
 
-public class ClientRun {
+public class ClientRun{
     public enum SceneName {
         CONNECTSERVER,
         LOGIN,
@@ -29,6 +30,7 @@ public class ClientRun {
     public static SocketHandler socketHandler;
 
     private static HashMap<String, GameRoom> activeGameRooms = new HashMap<>();
+    private static Map<String, GameRoom> gameRooms = new HashMap<>();
 
     public ClientRun() {
         socketHandler = new SocketHandler();
@@ -49,7 +51,7 @@ public class ClientRun {
         if (null != sceneName) {
             System.out.println("Opening scene: " + sceneName);
             String username = socketHandler.getLoginUser();
-            int score = socketHandler.getScore();
+            double score = socketHandler.getScore();
             int wins = socketHandler.getWins();
             switch (sceneName) {
                 case CONNECTSERVER:
@@ -64,6 +66,8 @@ public class ClientRun {
                 case HOMEVIEW:
                     homeView.setVisible(true);
                     homeView.updateUserInfo(username, score, wins);
+                    ((HomeView) homeView).enableQuickMatch();
+                    ((HomeView) homeView).enableCreateRoom();
                     break;
                 case PLAYWITHFRIEND:
                     playWithFriendView.setVisible(true);
@@ -101,25 +105,41 @@ public class ClientRun {
     }
 
     public static void closeAllScene() {
-        System.out.println("Closing all scenes"); // In ra màn hình khi đóng tất cả các cảnh
-        connectServer.dispose();
-        loginView.dispose();
-        registerView.dispose();
-        homeView.dispose();
-        playWithFriendView.dispose();
+        System.out.println("Closing all scenes");
+        if (connectServer != null) connectServer.dispose();
+        if (loginView != null) loginView.dispose();
+        if (registerView != null) registerView.dispose();
+        if (homeView != null) homeView.dispose();
+        if(playWithFriendView !=null)playWithFriendView.dispose();
     }
 
     public static void addGameRoom(String roomCode, GameRoom gameRoom) {
-        activeGameRooms.put(roomCode, gameRoom);
-        openGameRoom(roomCode);
+        gameRooms.put(roomCode, gameRoom);
+        System.out.println("GameRoom added to map: " + roomCode); // Log để kiểm tra
     }
 
     public static GameRoom findGameRoom(String roomCode) {
-        return activeGameRooms.get(roomCode);
+        GameRoom gameRoom = gameRooms.get(roomCode);
+        if (gameRoom == null) {
+            System.out.println("GameRoom not found in map: " + roomCode); // Log để kiểm tra
+        } else {
+            System.out.println("GameRoom found in map: " + roomCode); // Log để kiểm tra
+        }
+        return gameRoom;
+    }
+
+    public static void createGameRoom(String roomCode, String playerName, boolean isHost) {
+        if (!gameRooms.containsKey(roomCode)) {
+            GameRoom gameRoom = new GameRoom(playerName, roomCode, isHost);
+            gameRooms.put(roomCode, gameRoom);
+        }
     }
 
     public static void removeGameRoom(String roomCode) {
-        activeGameRooms.remove(roomCode);
+        GameRoom gameRoom = gameRooms.remove(roomCode);
+        if (gameRoom != null) {
+            gameRoom.dispose();
+        }
     }
 
     public static void openGameRoom(String roomCode) {
@@ -127,12 +147,25 @@ public class ClientRun {
         if (gameRoom != null) {
             System.out.println("Opening GameRoom: " + roomCode);
             gameRoom.setVisible(true);
+            gameRoom.toFront();
         } else {
             System.err.println("GameRoom not found for roomCode: " + roomCode);
         }
     }
+//    public static void enableQuickMatch() {
+//        if (homeView instanceof HomeView) {
+//            ((HomeView) homeView).enableQuickMatch();
+//        }
+//    }
+//
+//    public static void disableQuickMatch() {
+//        if (homeView instanceof HomeView) {
+//            ((HomeView) homeView).disableQuickMatch();
+//        }
+//    }
 
     public static void main(String[] args) {
         new ClientRun();
     }
+
 }

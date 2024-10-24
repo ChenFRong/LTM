@@ -111,6 +111,8 @@ public class HomeView extends JFrame {
                 ClientRun.openScene(ClientRun.SceneName.PLAYWITHFRIEND);
             }
         });
+        
+
 
         quickJoinButton.addActionListener(new ActionListener() {
             @Override
@@ -127,11 +129,23 @@ public class HomeView extends JFrame {
         setLocationRelativeTo(null);
     }
 
+//     //Thêm các phương thức mới vào đây
+   public void enableQuickMatch() {
+       quickJoinButton.setEnabled(true);
+       
+   }
+
+//    public void disableQuickMatch() {
+//        quickJoinButton.setEnabled(false);
+       
+//    }
+
+
     private void handleLogout() {
         int confirm = JOptionPane.showConfirmDialog(this,
                 "Bạn có chắc chắn muốn đăng xuất?",
                 "Xác nhận đăng xuất",
-                JOptionPane.YES_NO_OPTION);
+                JOptionPane.YES_OPTION);
         
         if (confirm == JOptionPane.YES_OPTION) {
             ClientRun.socketHandler.logout();
@@ -140,7 +154,9 @@ public class HomeView extends JFrame {
         }
     }
 
-    public void updateUserInfo(String username, int score, int wins) {
+    
+
+    public void updateUserInfo(String username, double score, int wins) {
         setUsername(username);
         setUserScore(score);
         setUserWins(wins);
@@ -149,10 +165,10 @@ public class HomeView extends JFrame {
     // Lớp đại diện cho một người chơi
     class Player {
         private String name;
-        private int score;
+        private float score;
         private int wins;
 
-        public Player(String name, int score, int wins) {
+        public Player(String name, float score, int wins) {
             this.name = name;
             this.score = score;
             this.wins = wins;
@@ -189,11 +205,23 @@ public class HomeView extends JFrame {
         playerNameLabel.setText("Người chơi: " + username);
     }
 
-    private void setUserScore(int score) {
+    private void setUserScore(double score) {
         scoreLabel.setText("Tổng điểm: " + score);
     }
 
     private void setUserWins(int wins) {
         winsLabel.setText("Tổng số trận thắng: " + wins);
     }
+
+    public void enableCreateRoom() {
+        SwingUtilities.invokeLater(() -> {
+            createRoomButton.setEnabled(true);
+        });
+    }
+
+    // public void disableCreateRoom() {
+    //     SwingUtilities.invokeLater(() -> {
+    //         createRoomButton.setEnabled(false);
+    //     });
+    // }
 }

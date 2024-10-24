@@ -12,6 +12,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import run.ClientRun;
 import view.GameRoom;
+import view.HomeView;
 
 public class SocketHandler {
     private Socket s;
@@ -19,8 +20,10 @@ public class SocketHandler {
     private DataOutputStream dos;
 
     private String loginUser = null; // Lưu tài khoản đăng nhập hiện tại
-    private int score = 0;
+    private double score = 0.0;
     private int wins = 0; // Thêm biến để lưu số lần thắng
+    private String roomIdPresent = null; // Thêm biến này
+    
 
     public String connect(String addr, int port) {
         try {
@@ -72,9 +75,6 @@ public class SocketHandler {
                     case "OPPONENT_JOINED":
                         onOpponentJoined(received);
                         break;
-                    case "GAME_START":
-                        onGameStart(received);
-                        break;
                     case "JOIN_FAILED":
                         onJoinFailed(received);
                         break;
@@ -87,7 +87,23 @@ public class SocketHandler {
                     case "LOGOUT_SUCCESS":
                         onLogoutSuccess();
                         break;
-                    // Bạn có thể thêm các trường hợp khác nếu cần
+                    case "START_GAME":
+                        onReceiveStartGame(received);
+                        break;
+                    case "NEXT_ROUND":
+                        onReceiveNextRound(received);
+                        break;
+                    case "ROUND_RESULT":
+                        onReceiveRoundResult(received);
+                        break;
+                    case "GAME_OVER":
+                        onReceiveGameOver(received);
+                        break;
+                    case "ASK_PLAY_AGAIN":
+                        onReceiveAskPlayAgain(received);
+                        break;
+                        
+// Bạn có thể thêm các trường hợp khác nếu cần
                 }
 
             } catch (IOException ex) {
@@ -148,7 +164,7 @@ public class SocketHandler {
 
         if (status.equals("success")) {
             this.loginUser = splitted[2];
-            this.score = Integer.parseInt(splitted[3]);
+            this.score = Double.parseDouble(splitted[3]);
             this.wins = Integer.parseInt(splitted[4]);
             ClientRun.closeScene(ClientRun.SceneName.LOGIN);
             ClientRun.openScene(ClientRun.SceneName.HOMEVIEW);
@@ -175,21 +191,26 @@ public class SocketHandler {
     private void onRoomCreated(String received) {
         String[] parts = received.split(";");
         String roomCode = parts[1];
+        this.roomIdPresent = roomCode;
         SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(null, "Phòng đã được tạo. Mã phòng: " + roomCode);
-            ClientRun.closeScene(ClientRun.SceneName.PLAYWITHFRIEND);
-            GameRoom gameRoom = new GameRoom(loginUser, roomCode);
+             ClientRun.closeScene(ClientRun.SceneName.PLAYWITHFRIEND); // Đóng cửa sổ PlayWithFriend
+            GameRoom gameRoom = new GameRoom(loginUser, roomCode, true);
             ClientRun.addGameRoom(roomCode, gameRoom);
+            gameRoom.setVisible(true);
+            System.out.println("GameRoom created and added: " + roomCode); // Log để kiểm tra
         });
     }
 
     private void onRoomJoined(String received) {
         String[] parts = received.split(";");
         String roomCode = parts[1];
+        this.roomIdPresent = roomCode;
         SwingUtilities.invokeLater(() -> {
-            ClientRun.closeScene(ClientRun.SceneName.PLAYWITHFRIEND);
-            GameRoom gameRoom = new GameRoom(loginUser, roomCode);
+             ClientRun.closeScene(ClientRun.SceneName.PLAYWITHFRIEND); // Đóng cửa sổ PlayWithFriend
+            GameRoom gameRoom = new GameRoom(loginUser, roomCode, false);
             ClientRun.addGameRoom(roomCode, gameRoom);
+            gameRoom.setVisible(true);
+            System.out.println("GameRoom joined and added: " + roomCode); // Log để kiểm tra
         });
     }
 
@@ -204,10 +225,10 @@ public class SocketHandler {
     SwingUtilities.invokeLater(() -> {
         GameRoom gameRoom = ClientRun.findGameRoom(roomCode);
         if (gameRoom != null) {
-            System.out.println("Setting opponent name to: " + opponentName + ", playerOrder: " + playerOrder);
             gameRoom.setOpponentName(opponentName, playerOrder);
+            // ... other updates if needed ...
         } else {
-            System.err.println("GameRoom not found for roomCode: " + roomCode);
+            System.out.println("Error: GameRoom not found for room code " + roomCode);
         }
     });
 }
@@ -232,22 +253,27 @@ public class SocketHandler {
         
         SwingUtilities.invokeLater(() -> {
             ClientRun.closeScene(ClientRun.SceneName.HOMEVIEW);
-            GameRoom gameRoom = new GameRoom(loginUser, roomCode);
+            boolean isHost = playerOrder.equals("FIRST");
+            GameRoom gameRoom = new GameRoom(loginUser, roomCode, isHost);
             gameRoom.setOpponentName(opponentName, playerOrder);
             ClientRun.addGameRoom(roomCode, gameRoom);
             gameRoom.setVisible(true);
         });
+        this.roomIdPresent = roomCode; // Cập nhật roomIdPresent
     }
 
-    private void onGameStart(String received) {
-        String roomCode = received.split(";")[1];
-        SwingUtilities.invokeLater(() -> {
-            GameRoom gameRoom = ClientRun.findGameRoom(roomCode);
-            if (gameRoom != null) {
-                gameRoom.startGame();
-            }
-        });
-    }
+    // private void onGameStart(String received) {
+    //     String[] parts = received.split(";");
+    //     String roomCode = parts[1];
+    //     this.roomIdPresent = roomCode; // Cập nhật roomIdPresent
+
+    //     SwingUtilities.invokeLater(() -> {
+    //         GameRoom gameRoom = ClientRun.findGameRoom(roomCode);
+    //         if (gameRoom != null) {
+    //             gameRoom.startGame();
+    //         }
+    //     });
+    // }
 
     private void onJoinFailed(String received) {
         String errorMessage = received.split(";")[1];
@@ -276,7 +302,7 @@ public class SocketHandler {
         return loginUser;
     }
 
-    public int getScore() {
+    public double getScore() {
         return score;
     }
 
@@ -286,7 +312,7 @@ public class SocketHandler {
 
     private void onLogoutSuccess() {
         System.out.println("Logout successful");
-        // Có thể thêm xử lý bổ sung nếu cần
+        // C�� thể thêm xử lý bổ sung nếu cần
     }
 
     public void backToHome() {
@@ -300,5 +326,206 @@ public class SocketHandler {
         SwingUtilities.invokeLater(() -> {
             ClientRun.openScene(ClientRun.SceneName.HOMEVIEW);
         });
+    }
+
+    private void onReceiveStartGame(String received) {
+        String[] splitted = received.split(";");
+        if (splitted.length >= 6 && splitted[1].equals("success")) {
+            String roomId = splitted[2];
+            String productName = splitted[3];
+            String imagePath = splitted[4];
+            int round = Integer.parseInt(splitted[5]);
+
+            SwingUtilities.invokeLater(() -> {
+                GameRoom gameRoom = ClientRun.findGameRoom(roomId);
+                if (gameRoom != null) {
+                    gameRoom.setRoomId(roomIdPresent);
+                    gameRoom.setProductInfo(productName, imagePath);
+                    gameRoom.setStartGame(30);
+                    gameRoom.setRound(round); // Cập nhật số lượt chơi
+                } else {
+                    System.out.println("Error: GameRoom not found for room ID " + roomId);
+                }
+            });
+        } else {
+            System.out.println("Failed to start game: " + received);
+        }
+    }
+    
+
+    private void onReceiveNextRound(String received) {
+        String[] parts = received.split(";");
+        String roomCode = parts[2];
+        int round = Integer.parseInt(parts[5]);
+        String productName = parts[3];
+        String imagePath = parts[4];
+        
+        SwingUtilities.invokeLater(() -> {
+            GameRoom gameRoom = ClientRun.findGameRoom(roomCode);
+            if (gameRoom != null) {
+                gameRoom.setRoomId(roomCode);
+                gameRoom.setRound(round);
+                gameRoom.setProductInfo(productName, imagePath);
+                gameRoom.startNextRound(30);
+            }
+        });
+    }
+
+    private void onReceiveRoundResult(String received) {
+        String[] parts = received.split(";");
+        if(parts[1].equals("success")){
+        String winner = parts[2];
+        double actualPrice = Double.parseDouble(parts[3]);
+        double guessClient1 = Double.parseDouble(parts[4]);
+        double guessClient2 = Double.parseDouble(parts[5]);
+        double roundScoreClient1 = Double.parseDouble(parts[6]);
+        double roundScoreClient2 = Double.parseDouble(parts[7]);
+        double totalScoreClient1 = Double.parseDouble(parts[8]);
+        double totalScoreClient2 = Double.parseDouble(parts[9]);
+        String nameClient1 = parts[10];
+        String nameClient2 = parts[11];
+        int round =Integer.parseInt(parts[12]);
+       
+        
+        SwingUtilities.invokeLater(() -> {
+            GameRoom gameRoom = ClientRun.findGameRoom(roomIdPresent);
+            if (gameRoom != null) {
+                gameRoom.showRoundResult(round,winner, actualPrice, guessClient1, guessClient2,
+                                         roundScoreClient1, roundScoreClient2,
+                                         totalScoreClient1, totalScoreClient2,
+                                         nameClient1, nameClient2);
+            }
+        });
+        }
+    }
+
+    private void onReceiveGameOver(String received) {
+    String[] splitted = received.split(";");
+    if (splitted.length >= 8 && splitted[1].equals("success")) {
+        String winner = splitted[2];
+        String nameClient1 = splitted[3];
+        String nameClient2 = splitted[4];
+        String roomId = splitted[5];
+        double scoreClient1 = Double.parseDouble(splitted[6]);
+        double scoreClient2 = Double.parseDouble(splitted[7]);
+
+        // Lưu điểm số cho client hiện tại
+        if (this.loginUser.equals(nameClient1)) {
+            this.score = this.score+scoreClient1;
+        } else if (this.loginUser.equals(nameClient2)) {
+            this.score = this.score+scoreClient2;
+        }
+
+        // Cập nhật số trận thắng nếu client là người thắng
+        if (this.loginUser.equals(winner)) {
+            this.wins++;
+        }
+
+        GameRoom gameRoom = ClientRun.findGameRoom(roomIdPresent);
+        SwingUtilities.invokeLater(() -> {
+            if (gameRoom != null) {
+                gameRoom.showGameOver(winner, scoreClient1, scoreClient2, nameClient1, nameClient2);
+            } else {
+                System.err.println("GameRoom not found for roomId: " + roomId);
+            }
+        });
+    } else {
+        System.err.println("Invalid GAME_OVER message received: " + received);
+    }
+}
+
+//private void updateHomeViewInfo() {
+//    SwingUtilities.invokeLater(() -> {
+//        if (ClientRun.homeView != null) {
+//            ClientRun.homeView.updateUserInfo(loginUser, score, wins);
+//        }
+//    });
+//}
+    
+    public void submitResult(String competitor) {
+        GameRoom gameRoom = ClientRun.findGameRoom(roomIdPresent);
+        String guess = gameRoom.getGuessInput();
+        
+        if (guess.isEmpty()) {
+            gameRoom.showMessage("Vui lòng nhập giá dự đoán!");
+        } else {
+            gameRoom.pauseTime();
+            int remainingTime = gameRoom.getRemainingTime();
+            int elapsedTime = 30 - remainingTime; // Giả sử thời gian ban đầu là 30 giây
+
+            sendData("SUBMIT_RESULT;" + loginUser + ";" + competitor + ";" + roomIdPresent + ";" + guess + ";" + elapsedTime);
+            gameRoom.afterSubmit();
+        }
+    }
+
+   
+
+    public void startGame(String opponentName) {
+        sendData("START_GAME;" + loginUser + ";" + opponentName + ";" + roomIdPresent);
+    }
+
+//    public void submitGuess(String guess) {
+//        GameRoom gameRoom = ClientRun.findGameRoom(roomIdPresent);
+//        if (gameRoom != null) {
+//            int remainingTime = gameRoom.getRemainingTime();
+//            int elapsedTime = 30 - remainingTime; // Assuming initial time is 30 seconds
+//            sendData("SUBMIT_GUESS;" + loginUser + ";" + roomIdPresent + ";" + guess + ";" + elapsedTime);
+//            gameRoom.afterSubmit();
+//        }
+//    }
+
+    public void leaveGame() {
+        sendData("LEAVE_GAME;" + loginUser + ";" + roomIdPresent);
+        roomIdPresent = null;
+    }
+
+    public void requestNextRound() {
+        sendData("REQUEST_NEXT_ROUND;" + loginUser + ";" + roomIdPresent);
+    }
+
+    public void acceptPlayAgain() {
+        sendData("ASK_PLAY_AGAIN;" +"YES"+";"+ loginUser + ";" + roomIdPresent);
+    }
+
+    public void declinePlayAgain() {
+        sendData("ASK_PLAY_AGAIN;" +"NO"+";"+ loginUser + ";" + roomIdPresent);
+    }
+
+    private void onJoinRoomSuccess(String received) {
+        String[] parts = received.split(";");
+        String roomCode = parts[1];
+        boolean isHost = Boolean.parseBoolean(parts[2]);
+        ClientRun.createGameRoom(roomCode, loginUser, isHost);
+    }
+
+    private void onReceiveAskPlayAgain(String received) {
+        String[] splitted = received.split(";");
+        String status = splitted[1];
+        
+        SwingUtilities.invokeLater(() -> {
+            GameRoom gameRoom = ClientRun.findGameRoom(roomIdPresent);
+            if (gameRoom != null) {
+                if (status.equals("NO")) {
+                    gameRoom.closeRoom();
+                    ClientRun.openScene(ClientRun.SceneName.HOMEVIEW);
+                    // ((HomeView) ClientRun.homeView).enableCreateRoom();
+                    // ((HomeView) ClientRun.homeView).enableQuickMatch();
+                    roomIdPresent = null;
+                } else if (status.equals("YES")) {
+                    if (loginUser.equals(splitted[2])) {
+                        gameRoom.setStateHostRoom();
+                    } else {
+                        gameRoom.setStateUserInvited();
+                    }
+                }
+            }
+        });
+    }
+
+    private void onPlayAgainTimeout(String received) {
+        GameRoom gameRoom = ClientRun.findGameRoom(roomIdPresent);
+        if (gameRoom != null) {
+            gameRoom.onPlayAgainTimeout();
+        }
     }
 }
