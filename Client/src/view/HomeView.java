@@ -305,8 +305,11 @@ public class HomeView extends JFrame {
                     tableModel.addRow(new Object[]{user.getUsername(), user.getScore(), user.getWins()});
                 }
             }
-            if (onlineListDialog != null && onlineListDialog.isVisible()) {
+            if (onlineListDialog != null) {
                 onlineListDialog.setTitle("Danh sách người dùng online (" + tableModel.getRowCount() + ")");
+                if (onlineListDialog.isVisible()) {
+                    onlineListDialog.repaint();
+                }
             }
         });
     }

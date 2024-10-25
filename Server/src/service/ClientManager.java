@@ -56,4 +56,11 @@ public class ClientManager {
         System.out.println("Generated online list: " + result);
         return result.isEmpty() ? "EMPTY" : result;
     }
+
+    public void broadcastOnlineList() {
+        String onlineList = getListUserOnline();
+        for (Client client : clients.values()) {
+            client.sendData("UPDATE_ONLINE_LIST;" + onlineList);
+        }
+    }
 }

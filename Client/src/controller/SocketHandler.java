@@ -112,9 +112,9 @@ public class SocketHandler {
                     case "GET_LIST_ONLINE":
                         onReceiveGetListOnline(received);
                         break;
-                    // case "UPDATE_ONLINE_LIST":
-                    //     onReceiveUpdateOnlineList(received);
-                    //     break;
+                    case "UPDATE_ONLINE_LIST":
+                        onReceiveUpdateOnlineList(received);
+                        break;
                         
 // Bạn có thể thêm các trường hợp khác nếu cần
                 }
@@ -177,7 +177,6 @@ public class SocketHandler {
     private void onReceiveLogin(String received) {
         String[] splitted = received.split(";");
         String status = splitted[1];
-
         if (status.equals("success")) {
             this.loginUser = splitted[2];
             this.score = Double.parseDouble(splitted[3]);
@@ -580,5 +579,28 @@ public class SocketHandler {
         } else {
             JOptionPane.showMessageDialog(ClientRun.homeView, "Có lỗi khi lấy danh sách người dùng online", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void onReceiveUpdateOnlineList(String received) {
+        String[] splitted = received.split(";");
+        List<UserInfo> onlineUsers = new ArrayList<>();
+        if (splitted.length > 1 && !splitted[1].equals("EMPTY")) {
+            for (String userInfoStr : splitted[1].split(";")) {
+                String[] userInfo = userInfoStr.split(",");
+                if (userInfo.length == 3) {
+                    String username = userInfo[0];
+                    double score = Double.parseDouble(userInfo[1]);
+                    int wins = Integer.parseInt(userInfo[2]);
+                    if (!username.equals(loginUser)) {
+                        onlineUsers.add(new UserInfo(username, score, wins));
+                    }
+                }
+            }
+        }
+        SwingUtilities.invokeLater(() -> {
+            if (ClientRun.homeView != null) {
+                ((HomeView) ClientRun.homeView).updateOnlineUsersList(onlineUsers);
+            }
+        });
     }
 }

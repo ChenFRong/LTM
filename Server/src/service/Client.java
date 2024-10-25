@@ -127,6 +127,7 @@ public class Client implements Runnable {
             // Thêm log để kiểm tra
             System.out.println("Login successful. loginUser set to: " + getLoginUser());
             //broadcastOnlineList();
+            ServerRun.clientManager.broadcastOnlineList();
         } else {
             // Nếu đăng nhập thất bại, trả về thông báo lỗi
             sendData("LOGIN;" + result); // result sẽ là "failed;L do thất bại"
@@ -276,7 +277,7 @@ public class Client implements Runnable {
         this.loginUser = null;
         sendData("LOGOUT_SUCCESS");
         System.out.println("User logged out: " + this.getLoginUser());
-       // broadcastOnlineList();
+        ServerRun.clientManager.broadcastOnlineList();
     }
 
     private void onReceiveStartGame(String received) {
