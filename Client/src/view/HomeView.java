@@ -13,6 +13,9 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 import run.ClientRun;
+import model.UserInfo;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.ListSelectionModel;
 
 public class HomeView extends JFrame {
     private JButton createRoomButton;
@@ -30,6 +33,8 @@ public class HomeView extends JFrame {
     private JList<String> onlineUsersList;
     private DefaultListModel<String> onlineUsersModel;
     private JButton chatButton;
+    private JTable onlineUsersTable;
+    private DefaultTableModel tableModel;
 
     // Danh sách lưu trữ các phòng chơi
     private List<GameRoom> gameRooms = new ArrayList<>();
@@ -42,9 +47,18 @@ public class HomeView extends JFrame {
         JPanel mainPanel = new JPanel(new BorderLayout());
 
         // Tạo panel cho nút logout
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel topPanel = new JPanel(new BorderLayout());
+        
+        // Nút danh sách online ở góc trái
+        onlineListButton = new JButton("Danh sách online");
+        onlineListButton.addActionListener(e -> showOnlineListDialog());
+        topPanel.add(onlineListButton, BorderLayout.WEST);
+
+        // Nút đăng xuất ở góc phải
         logoutButton = new JButton("Đăng xuất");
-        topPanel.add(logoutButton);
+        logoutButton.addActionListener(e -> handleLogout());
+        topPanel.add(logoutButton, BorderLayout.EAST);
+
         mainPanel.add(topPanel, BorderLayout.NORTH);
 
         // Tạo panel chứa các thông tin và nút
@@ -96,20 +110,6 @@ public class HomeView extends JFrame {
         gbc.gridwidth = 2;
         contentPanel.add(statusLabel, gbc);
 
-        // Tạo panel cho nút danh sách online
-        JPanel topLeftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        onlineListButton = new JButton("Danh sách online");
-        topLeftPanel.add(onlineListButton);
-        mainPanel.add(topLeftPanel, BorderLayout.WEST);
-
-        // Thêm ActionListener cho nút danh sách online
-        onlineListButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showOnlineListDialog();
-            }
-        });
-
         mainPanel.add(contentPanel, BorderLayout.CENTER);
 
         // Thêm mainPanel vào JFrame
@@ -146,6 +146,20 @@ public class HomeView extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(400, 300);
         setLocationRelativeTo(null);
+
+        // Khởi tạo onlineUsersModel ngay trong constructor
+        onlineUsersModel = new DefaultListModel<>();
+        onlineUsersList = new JList<>(onlineUsersModel);
+
+        // Khởi tạo tableModel và onlineUsersTable
+        tableModel = new DefaultTableModel(new Object[]{"Tên người chơi", "Điểm số", "Số trận thắng"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Làm cho bảng không thể chỉnh sửa
+            }
+        };
+        onlineUsersTable = new JTable(tableModel);
+        onlineUsersTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     }
 
     //Thêm các phương thức mới vào đây
@@ -251,46 +265,50 @@ public class HomeView extends JFrame {
 
     private void showOnlineListDialog() {
         if (onlineListDialog == null) {
-            onlineListDialog = new JDialog(this, "Danh sách người dùng online", false);
-            onlineListDialog.setSize(300, 400);
-            onlineListDialog.setLocationRelativeTo(this);
-
-            onlineUsersModel = new DefaultListModel<>();
-            onlineUsersList = new JList<>(onlineUsersModel);
-            JScrollPane scrollPane = new JScrollPane(onlineUsersList);
-
-            chatButton = new JButton("Trò chuyện");
-            chatButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    String selectedUser = onlineUsersList.getSelectedValue();
-                    if (selectedUser != null) {
-                        startChat(selectedUser);
-                    } else {
-                        JOptionPane.showMessageDialog(onlineListDialog, "Vui lòng chọn một người dùng để trò chuyện.");
-                    }
-                }
-            });
-
-            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-            buttonPanel.add(chatButton);
-
-            onlineListDialog.setLayout(new BorderLayout());
-            onlineListDialog.add(scrollPane, BorderLayout.CENTER);
-            onlineListDialog.add(buttonPanel, BorderLayout.SOUTH);
+            createOnlineListDialog();
         }
-
-        updateOnlineUsersList();
+        ClientRun.socketHandler.getListOnline();
         onlineListDialog.setVisible(true);
     }
 
-    private void updateOnlineUsersList() {
-        // Gọi API hoặc sử dụng dữ liệu từ server để lấy danh sách người dùng online
-        List<String> onlineUsers = ClientRun.socketHandler.getOnlineUsers();
-        onlineUsersModel.clear();
-        for (String user : onlineUsers) {
-            onlineUsersModel.addElement(user);
-        }
+    private void createOnlineListDialog() {
+        onlineListDialog = new JDialog(this, "Danh sách người dùng online", false);
+        onlineListDialog.setSize(400, 400);
+        onlineListDialog.setLocationRelativeTo(this);
+
+        JScrollPane scrollPane = new JScrollPane(onlineUsersTable);
+
+        JButton chatButton = new JButton("Trò chuyện");
+        chatButton.addActionListener(e -> {
+            int selectedRow = onlineUsersTable.getSelectedRow();
+            if (selectedRow != -1) {
+                String selectedUser = (String) tableModel.getValueAt(selectedRow, 0);
+                startChat(selectedUser);
+            } else {
+                JOptionPane.showMessageDialog(onlineListDialog, "Vui lòng chọn một người dùng để trò chuyện.");
+            }
+        });
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(chatButton);
+
+        onlineListDialog.setLayout(new BorderLayout());
+        onlineListDialog.add(scrollPane, BorderLayout.CENTER);
+        onlineListDialog.add(buttonPanel, BorderLayout.SOUTH);
+    }
+
+    public void updateOnlineUsersList(List<UserInfo> onlineUsers) {
+        SwingUtilities.invokeLater(() -> {
+            tableModel.setRowCount(0);
+            for (UserInfo user : onlineUsers) {
+                if (!user.getUsername().equals(ClientRun.socketHandler.getLoginUser())) {
+                    tableModel.addRow(new Object[]{user.getUsername(), user.getScore(), user.getWins()});
+                }
+            }
+            if (onlineListDialog != null && onlineListDialog.isVisible()) {
+                onlineListDialog.setTitle("Danh sách người dùng online (" + tableModel.getRowCount() + ")");
+            }
+        });
     }
 
     private void startChat(String selectedUser) {

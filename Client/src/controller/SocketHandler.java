@@ -6,13 +6,19 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import model.UserInfo;
 import run.ClientRun;
 import view.GameRoom;
 import view.HomeView;
+//import model.UserInfo;
 
 public class SocketHandler {
     private Socket s;
@@ -24,6 +30,7 @@ public class SocketHandler {
     private int wins = 0; // Thêm biến để lưu số lần thắng
     private String roomIdPresent = null; // Thêm biến này
     
+    private boolean isLoggingOut = false;
 
     public String connect(String addr, int port) {
         try {
@@ -102,6 +109,12 @@ public class SocketHandler {
                     case "ASK_PLAY_AGAIN":
                         onReceiveAskPlayAgain(received);
                         break;
+                    case "GET_LIST_ONLINE":
+                        onReceiveGetListOnline(received);
+                        break;
+                    // case "UPDATE_ONLINE_LIST":
+                    //     onReceiveUpdateOnlineList(received);
+                    //     break;
                         
 // Bạn có thể thêm các trường hợp khác nếu cần
                 }
@@ -142,10 +155,13 @@ public class SocketHandler {
     }
 
     public void logout() {
-        sendData("LOGOUT");
-        this.loginUser = null;
-        this.score = 0;
-        this.wins = 0;
+        if (!isLoggingOut) {
+            isLoggingOut = true;
+            sendData("LOGOUT");
+            this.loginUser = null;
+            this.score = 0;
+            this.wins = 0;
+        }
     }
 
     private void sendData(String data) {
@@ -312,7 +328,11 @@ public class SocketHandler {
 
     private void onLogoutSuccess() {
         System.out.println("Logout successful");
-        // C�� thể thêm xử lý bổ sung nếu cần
+        isLoggingOut = false;
+        SwingUtilities.invokeLater(() -> {
+            ClientRun.closeScene(ClientRun.SceneName.HOMEVIEW);
+            ClientRun.openScene(ClientRun.SceneName.LOGIN);
+        });
     }
 
     public void backToHome() {
@@ -490,6 +510,10 @@ public class SocketHandler {
     public void declinePlayAgain() {
         sendData("ASK_PLAY_AGAIN;" +"NO"+";"+ loginUser + ";" + roomIdPresent);
     }
+    
+     public void getListOnline() {
+        sendData("GET_LIST_ONLINE");
+    }
 
     private void onJoinRoomSuccess(String received) {
         String[] parts = received.split(";");
@@ -526,6 +550,35 @@ public class SocketHandler {
         GameRoom gameRoom = ClientRun.findGameRoom(roomIdPresent);
         if (gameRoom != null) {
             gameRoom.onPlayAgainTimeout();
+        }
+    }
+
+    private void onReceiveGetListOnline(String received) {
+        System.out.println("Received online list data: " + received);
+        String[] splitted = received.split(";");
+        if (splitted[1].equals("success")) {
+            List<UserInfo> onlineUsers = new ArrayList<>();
+            if (splitted.length > 2 && !splitted[2].equals("EMPTY")) {
+                for (int i = 2; i < splitted.length; i++) {
+                    String[] userInfo = splitted[i].split(",");
+                    if (userInfo.length == 3) {
+                        String username = userInfo[0];
+                        double score = Double.parseDouble(userInfo[1]);
+                        int wins = Integer.parseInt(userInfo[2]);
+                        if (!username.equals(loginUser)) {  // Không thêm người dùng hiện tại vào danh sách
+                            onlineUsers.add(new UserInfo(username, score, wins));
+                        }
+                    }
+                }
+            }
+            System.out.println("Parsed online users: " + onlineUsers.size());
+            SwingUtilities.invokeLater(() -> {
+                if (ClientRun.homeView != null) {
+                    ((HomeView) ClientRun.homeView).updateOnlineUsersList(onlineUsers);
+                }
+            });
+        } else {
+            JOptionPane.showMessageDialog(ClientRun.homeView, "Có lỗi khi lấy danh sách người dùng online", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

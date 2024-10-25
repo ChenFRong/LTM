@@ -19,6 +19,8 @@ public class Client implements Runnable {
     private String loginUser;
     private Room joinedRoom;
     private Client cCompetitor;
+    private double score;
+    private int wins;
 
     public Client(Socket socket) throws IOException {
         this.socket = socket;
@@ -124,9 +126,10 @@ public class Client implements Runnable {
             
             // Thêm log để kiểm tra
             System.out.println("Login successful. loginUser set to: " + getLoginUser());
+            //broadcastOnlineList();
         } else {
             // Nếu đăng nhập thất bại, trả về thông báo lỗi
-            sendData("LOGIN;" + result); // result sẽ là "failed;Lý do thất bại"
+            sendData("LOGIN;" + result); // result sẽ là "failed;L do thất bại"
             logAction("LOGIN_FAILED");
         }
         
@@ -149,8 +152,9 @@ public class Client implements Runnable {
     }
 
     private void handleGetListOnline() {
-        String result = ServerRun.clientManager.getListUseOnline();
-        sendData("GET_LIST_ONLINE;" + result);
+        String result = ServerRun.clientManager.getListUserOnline();
+        sendData("GET_LIST_ONLINE;success;" + result);
+        System.out.println("Sent online list: " + result); // Thêm log này
     }
 
     private void handleCreateRoom() {
@@ -272,6 +276,7 @@ public class Client implements Runnable {
         this.loginUser = null;
         sendData("LOGOUT_SUCCESS");
         System.out.println("User logged out: " + this.getLoginUser());
+       // broadcastOnlineList();
     }
 
     private void onReceiveStartGame(String received) {
@@ -384,5 +389,21 @@ public class Client implements Runnable {
 
     public void setcCompetitor(Client cCompetitor) {
         this.cCompetitor = cCompetitor;
+    }
+
+    // private void broadcastOnlineList() {
+    //     String onlineList = ServerRun.clientManager.getListUserOnline();
+    //     for (Client client : ServerRun.clientManager.getAllClients()) {
+    //         client.sendData("UPDATE_ONLINE_LIST;" + onlineList);
+    //     }
+    // }
+
+    // Thêm getters cho score và wins
+    public double getScore() {
+        return score;
+    }
+
+    public int getWins() {
+        return wins;
     }
 }
