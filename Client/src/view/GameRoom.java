@@ -369,16 +369,30 @@ public class GameRoom extends javax.swing.JFrame {
                                     nameClient1, guessClient1, roundScoreClient1, totalScoreClient1);
             message += String.format("\n\n%s:\nDự đoán: %,.0f\nĐiểm lượt này: %.1f\nTổng điểm: %.1f",
                                     nameClient2, guessClient2, roundScoreClient2, totalScoreClient2);
-            JOptionPane.showMessageDialog(this, message, "Kết quả lượt chơi", JOptionPane.INFORMATION_MESSAGE);
+            // Hiển thị JOptionPane
+            final JOptionPane optionPane = new JOptionPane(message, JOptionPane.INFORMATION_MESSAGE);
+            final JDialog dialog = optionPane.createDialog(this, "Kết quả lượt chơi");
+            
+            // Tạo và bắt đầu timer để đóng dialog sau 3 giây
+            Timer timer = new Timer(3000, e -> dialog.dispose());
+            timer.setRepeats(false);
+            timer.start();
+
+            // Hiển thị dialog
+            dialog.setVisible(true);
         });
     }
-
     public void showGameOver(String winner, double scoreClient1, double scoreClient2, String nameClient1, String nameClient2) {
         SwingUtilities.invokeLater(() -> {
             String message = String.format("Kết thúc trò chơi!\nNgười thắng: %s\n\nTổng điểm:\n%s: %.2f\n%s: %.2f",
                     winner, nameClient1, scoreClient1, nameClient2, scoreClient2);
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             JOptionPane.showMessageDialog(this, message, "Kết thúc trò chơi", JOptionPane.INFORMATION_MESSAGE);
-            showAskPlayAgain("Bạn có muốn chơi lại không?");
+            showAskPlayAgain("Bạn có muốn chơi lại không?");          
         });
     }
 
