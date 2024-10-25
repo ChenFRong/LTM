@@ -418,12 +418,15 @@ public class GameRoom extends javax.swing.JFrame {
     
     public void setStateHostRoom () {
         answer = false;
+        clearguessInput();
         startButton.setVisible(true);
         waitingLabel.setVisible(false);
     }
     
     public void setStateUserInvited () {
+        
         answer = false;
+        clearguessInput();
         startButton.setVisible(false);
         waitingLabel.setVisible(true);
     }
@@ -434,4 +437,8 @@ public class GameRoom extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Hết thời gian chờ phản hồi chơi lại.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
         });
     }
+
+     private void clearguessInput() {
+         guessInput.setText("");
+     }
 }

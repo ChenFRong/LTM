@@ -91,6 +91,7 @@ public class ClientRun{
                     loginView.dispose();
                     break;
                 case REGISTER:
+                    registerView.setVisible(false);
                     registerView.dispose();
                     break;
                 case HOMEVIEW:
