@@ -280,18 +280,18 @@ public class HomeView extends JFrame {
             onlineListDialog.add(buttonPanel, BorderLayout.SOUTH);
         }
 
-        updateOnlineUsersList();
+//        updateOnlineUsersList();
         onlineListDialog.setVisible(true);
     }
 
-    private void updateOnlineUsersList() {
-        // Gọi API hoặc sử dụng dữ liệu từ server để lấy danh sách người dùng online
-        List<String> onlineUsers = ClientRun.socketHandler.getOnlineUsers();
-        onlineUsersModel.clear();
-        for (String user : onlineUsers) {
-            onlineUsersModel.addElement(user);
-        }
-    }
+//    private void updateOnlineUsersList() {
+//        // Gọi API hoặc sử dụng dữ liệu từ server để lấy danh sách người dùng online
+//        List<String> onlineUsers = ClientRun.socketHandler.getOnlineUsers();
+//        onlineUsersModel.clear();
+//        for (String user : onlineUsers) {
+//            onlineUsersModel.addElement(user);
+//        }
+//    }
 
     private void startChat(String selectedUser) {
         // Implement chức năng trò chuyện ở đây

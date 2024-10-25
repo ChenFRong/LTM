@@ -13,14 +13,15 @@ public class GameRoom extends javax.swing.JFrame {
     private String playerName;
     private String roomCode;
     private boolean isHost;
-     private String productName;
-        private String productImage;
-       private double totalScore = 0;
+    private String productName;
+    private String productImage;
+    private double totalScore = 0;
     private String opponentName;
     private CountDownTimer matchTimer;
     private CountDownTimer waitingClientTimer;
     private boolean answer = false;
     private int round = 0;
+    private CountDownTimer roundTimer;
 
     // Thêm khai báo biến roomId
     
@@ -166,18 +167,18 @@ public class GameRoom extends javax.swing.JFrame {
     }
 
     public void startGame(int matchTimeLimit) {
-       
         answer = false;
         startButton.setVisible(false);
         waitingLabel.setVisible(false);
         submitButton.setVisible(true);
         timerLabel.setVisible(true);
 
-        matchTimer = new CountDownTimer(matchTimeLimit);
-        matchTimer.setTimerCallBack(
+        // Khởi tạo roundTimer cho 30 giây
+        roundTimer = new CountDownTimer(30);
+        roundTimer.setTimerCallBack(
             null,
             (Callable) () -> {
-                int currentTick = matchTimer.getCurrentTick();
+                int currentTick = roundTimer.getCurrentTick();
                 timerLabel.setText("Thời gian: " + CustumDateTimeFormatter.secondsToMinutes(currentTick));
                 if (currentTick == 0) {
                     afterSubmit();
@@ -186,9 +187,16 @@ public class GameRoom extends javax.swing.JFrame {
             },
             1
         );
+        
+        // Bắt đầu đếm ngược
+        roundTimer.start();
     }
 
     public void afterSubmit() {
+        if(roundTimer != null){
+            roundTimer.stop();
+        }
+        
         submitButton.setVisible(false);
         waitingLabel.setVisible(true);
         waitingLabel.setText("Đang chờ kết quả từ server...");
@@ -311,8 +319,7 @@ public class GameRoom extends javax.swing.JFrame {
             guessInput.setEnabled(true);
             submitButton.setEnabled(true);
             guessInput.setText("");
-            setStartGame(timeLimit);
-            
+            setStartGame(timeLimit);  
         });
     }
 
@@ -369,7 +376,17 @@ public class GameRoom extends javax.swing.JFrame {
                                     nameClient1, guessClient1, roundScoreClient1, totalScoreClient1);
             message += String.format("\n\n%s:\nDự đoán: %,.0f\nĐiểm lượt này: %.1f\nTổng điểm: %.1f",
                                     nameClient2, guessClient2, roundScoreClient2, totalScoreClient2);
-            JOptionPane.showMessageDialog(this, message, "Kết quả lượt chơi", JOptionPane.INFORMATION_MESSAGE);
+            // Hiển thị JOptionPane
+            final JOptionPane optionPane = new JOptionPane(message, JOptionPane.INFORMATION_MESSAGE);
+            final JDialog dialog = optionPane.createDialog(this, "Kết quả lượt chơi");
+            
+            // Tạo và bắt đầu timer để đóng dialog sau 3 giây
+            Timer timer = new Timer(3000, e -> dialog.dispose());
+            timer.setRepeats(false);
+            timer.start();
+
+            // Hiển thị dialog
+            dialog.setVisible(true);
         });
     }
 
@@ -377,15 +394,44 @@ public class GameRoom extends javax.swing.JFrame {
         SwingUtilities.invokeLater(() -> {
             String message = String.format("Kết thúc trò chơi!\nNgười thắng: %s\n\nTổng điểm:\n%s: %.2f\n%s: %.2f",
                     winner, nameClient1, scoreClient1, nameClient2, scoreClient2);
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             JOptionPane.showMessageDialog(this, message, "Kết thúc trò chơi", JOptionPane.INFORMATION_MESSAGE);
-            showAskPlayAgain("Bạn có muốn chơi lại không?");
+            showAskPlayAgain("Bạn có muốn chơi lại không?");          
         });
     }
 
+    // private void handlePlayAgain() {
+    //     try {
+    //         // Gửi yêu cầu chơi lại đến server
+    //         ClientRun.socketHandler.sendPlayAgainRequest("YES");
+    //         setStartGame(30);
+    //         // Ẩn panel chơi lại
+    //         playAgainPanel.setVisible(false);
+    //         // Hiển thị thông báo đang chờ phản hồi từ đối thủ
+    //         JOptionPane.showMessageDialog(this, "Đang chờ phản hồi từ đối thủ...", "Chờ đợi", JOptionPane.INFORMATION_MESSAGE);
+    //         // Vô hiệu hóa các điều khiển không cần thiết trong khi chờ đợi
+    //         disableControlsDuringWaiting();
+    
+    //     } catch (Exception e) {
+    //         e.printStackTrace();
+    //         JOptionPane.showMessageDialog(this, "Lỗi khi gửi yêu cầu chơi lại: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+    //     }
+    // }
+    
+    // private void disableControlsDuringWaiting() {
+    //     // Vô hiệu hóa các nút hoặc điều khiển không cần thiết
+    //     // Ví dụ:
+    //     guessInput.setEnabled(false);
+    //     submitButton.setEnabled(false);
+    //     // Thêm các điều khiển khác nếu cần
+    // }
     public String getGuessInput() {
         return guessInput.getText();
     }
-
     public void pauseTime() {
         if (matchTimer != null) {
             matchTimer.pause();
@@ -423,7 +469,9 @@ public class GameRoom extends javax.swing.JFrame {
     }
     
     public void setStateUserInvited () {
+        
         answer = false;
+        guessInput.setText("");
         startButton.setVisible(false);
         waitingLabel.setVisible(true);
     }
@@ -434,4 +482,17 @@ public class GameRoom extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Hết thời gian chờ phản hồi chơi lại.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
         });
     }
+
+    // public void setStateUserInvited () {
+    //     answer = false;
+    //     startButton.setVisible(false);
+    //     waitingLabel.setVisible(true);
+    // }
+
+    // public void onPlayAgainTimeout() {
+    //     SwingUtilities.invokeLater(() -> {
+    //         hideAskPlayAgain();
+    //         JOptionPane.showMessageDialog(this, "Hết thời gian chờ phản hồi chơi lại.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+    //     });
+    // }
 }

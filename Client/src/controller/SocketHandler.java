@@ -521,6 +521,17 @@ public class SocketHandler {
             }
         });
     }
+    public void sendPlayAgainRequest(String status) {
+        try {
+            String message = "ASK_PLAY_AGAIN;" + status + ";" + loginUser;
+            dos.writeUTF(message);
+            dos.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Lỗi khi gửi yêu cầu chơi lại: " + e.getMessage());
+        }
+    }
+
 
     private void onPlayAgainTimeout(String received) {
         GameRoom gameRoom = ClientRun.findGameRoom(roomIdPresent);
