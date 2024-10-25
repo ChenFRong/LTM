@@ -352,8 +352,11 @@ public class Client implements Runnable {
         
         if ("YES".equals(result)) {
             joinedRoom.broadcast("ASK_PLAY_AGAIN;YES;" + joinedRoom.getClient1().loginUser + ";" + joinedRoom.getClient2().loginUser);
-            joinedRoom.resetRoom();
-            joinedRoom.startGame();
+            Room room = ServerRun.roomManager.find(joinedRoom.getId());
+            if (room != null) {
+             joinedRoom.resetRoom();
+             joinedRoom.startGame();
+            }
         } else {
             joinedRoom.broadcast("ASK_PLAY_AGAIN;NO;");
             Room room = ServerRun.roomManager.find(joinedRoom.getId());

@@ -66,8 +66,9 @@ public class ClientRun{
                 case HOMEVIEW:
                     homeView.setVisible(true);
                     homeView.updateUserInfo(username, score, wins);
+                    homeView.satusLabel();
                     ((HomeView) homeView).enableQuickMatch();
-                    ((HomeView) homeView).enableCreateRoom();
+//                    ((HomeView) homeView).enableCreateRoom();
                     break;
                 case PLAYWITHFRIEND:
                     playWithFriendView.setVisible(true);

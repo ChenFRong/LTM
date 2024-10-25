@@ -509,7 +509,7 @@ public class SocketHandler {
                     gameRoom.closeRoom();
                     ClientRun.openScene(ClientRun.SceneName.HOMEVIEW);
                     // ((HomeView) ClientRun.homeView).enableCreateRoom();
-                    // ((HomeView) ClientRun.homeView).enableQuickMatch();
+                     ((HomeView) ClientRun.homeView).enableQuickMatch();
                     roomIdPresent = null;
                 } else if (status.equals("YES")) {
                     if (loginUser.equals(splitted[2])) {

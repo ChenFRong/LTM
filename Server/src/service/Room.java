@@ -183,18 +183,35 @@ public class Room {
     }
     
     public void resetRoom() {
-        gameStarted = false;
-        currentProduct = null;
-        priceGuessClient1 = 0;
-        priceGuessClient2 = 0;
-        playAgainC1 = null;
-        playAgainC2 = null;
-        time = "00:00";
-        waitingTime = "00:00";
-        currentRound = 0;
-        waitingTimer.restart();
-        isGameOver = false;
+    gameStarted = false;
+    currentProduct = null;
+    priceGuessClient1 = 0;
+    priceGuessClient2 = 0;
+    playAgainC1 = null;
+    playAgainC2 = null;
+    time = "00:00";
+    waitingTime = "00:00";
+    currentRound = 0;
+    isGameOver = false;
+
+    // Khởi động lại waitingTimer
+    if (waitingTimer != null) {
+        waitingTimer.cancel();
     }
+    waitingTimer = new CountDownTimer(30);
+    waitingTimer.setTimerCallBack(
+        null,
+        (Callable) () -> {
+            waitingTime = "" + CustumDateTimeFormatter.secondsToMinutes(waitingTimer.getCurrentTick());
+            System.out.println("waiting: " + waitingTime);
+            if (waitingTime.equals("00:00")) {
+                handleTimeoutPlayAgain();
+            }
+            return null;
+        },
+        1
+    );
+}
     
     public String handleResultClient() {
         double actualPrice = currentProduct.getPrice();
@@ -334,9 +351,12 @@ public class Room {
                 waitingTimer.cancel(); // Hủy bỏ bộ đếm thời gian
                 waitingTimer = null;
             }
-            //deleteRoom();
             return "NO";
         } else if (playAgainC1.equals("YES") && playAgainC2.equals("YES")) {
+            if (waitingTimer != null) {
+                waitingTimer.cancel(); // Hủy bỏ bộ đếm thời gian
+                waitingTimer = null;
+            }
             return "YES";
         }
         return "NO";
