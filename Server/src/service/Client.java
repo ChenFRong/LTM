@@ -78,6 +78,24 @@ public class Client implements Runnable {
                     case "ASK_PLAY_AGAIN":
                         onReceiveAskPlayAgain(received);
                         break;
+                    case "INVITE_CHAT":
+                        handleInviteChat(received);
+                        break;
+                    case "ACCEPT_CHAT":
+                        handleAcceptChat(received);
+                        break;
+                    case "DECLINE_CHAT":
+                        handleDeclineChat(received);
+                        break;
+                    case "CHAT_MESSAGE":
+                        handleChatMessage(received);
+                        break;
+                    case "OPEN_CHAT_ROOM":
+                        handleOpenChatRoom(received);
+                        break;
+                    case "EXIT_CHAT_ROOM":
+                        handleExitChatRoom(received);
+                        break;
                 }
                 
                 System.out.println("After processing " + type + ", loginUser is: " + getLoginUser());
@@ -406,5 +424,82 @@ public class Client implements Runnable {
 
     public int getWins() {
         return wins;
+    }
+
+    private void handleInviteChat(String received) {
+        String[] parts = received.split(";");
+        String inviter = parts[1];
+        String invitedUser = parts[2];
+        Client invitedClient = ServerRun.clientManager.getClientByUsername(invitedUser);
+        if (invitedClient != null) {
+            invitedClient.sendData("CHAT_INVITATION;" + inviter);
+        }
+    }
+
+    private void handleAcceptChat(String received) {
+        String[] parts = received.split(";");
+        String accepter = parts[1];
+        String inviter = parts[2];
+        Client inviterClient = ServerRun.clientManager.getClientByUsername(inviter);
+        if (inviterClient != null) {
+            inviterClient.sendData("CHAT_ACCEPTED;" + accepter);
+        }
+    }
+
+    private void handleDeclineChat(String received) {
+        String[] parts = received.split(";");
+        String decliner = parts[1];
+        String inviter = parts[2];
+        Client inviterClient = ServerRun.clientManager.getClientByUsername(inviter);
+        if (inviterClient != null) {
+            inviterClient.sendData("CHAT_DECLINED;" + decliner);
+        }
+    }
+
+    private void handleChatMessage(String received) {
+        String[] parts = received.split(";");
+        String sender = parts[1];
+        String recipient = parts[2];
+        String message = parts[3];
+        Client recipientClient = ServerRun.clientManager.getClientByUsername(recipient);
+        if (recipientClient != null) {
+            recipientClient.sendData("CHAT_MESSAGE;" + sender + ";" + recipient + ";" + message);
+        }
+    }
+
+    private void handleOpenChatRoom(String received) {
+        String[] parts = received.split(";");
+        String sender = parts[1];
+        String recipient = parts[2];
+        
+        Client recipientClient = ServerRun.clientManager.getClientByUsername(recipient);
+        if (recipientClient != null) {
+            recipientClient.sendData("OPEN_CHAT_ROOM;" + sender);
+            recipientClient.setInChatRoom(true);
+        }
+        this.setInChatRoom(true);
+        sendData("OPEN_CHAT_ROOM;" + recipient);
+    }
+
+    private void handleExitChatRoom(String received) {
+        String[] parts = received.split(";");
+        String exitingUser = parts[1];
+        String otherUser = parts[2];
+        Client otherClient = ServerRun.clientManager.getClientByUsername(otherUser);
+        if (otherClient != null && otherClient.isInChatRoom) {
+            otherClient.sendData("EXIT_CHAT_ROOM;" + exitingUser);
+        }
+        this.setInChatRoom(false);
+    }
+
+    // Thêm phương thức này để kiểm tra xem người dùng có đang trong phòng chat hay không
+    private boolean isInChatRoom = false;
+
+    public boolean isInChatRoom() {
+        return isInChatRoom;
+    }
+
+    public void setInChatRoom(boolean inChatRoom) {
+        this.isInChatRoom = inChatRoom;
     }
 }

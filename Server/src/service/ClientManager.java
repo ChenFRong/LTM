@@ -18,11 +18,13 @@ public class ClientManager {
     // Thêm client vào danh sách
     public void addClient(String username, Client client) {
         clients.put(username, client);
+        broadcastOnlineListUpdate();
     }
 
     // Xóa client khỏi danh sách
     public void removeClient(String username) {
         clients.remove(username);
+        broadcastOnlineListUpdate();
     }
 
     // Lấy danh sách người dùng trực tuyến
@@ -62,5 +64,20 @@ public class ClientManager {
         for (Client client : clients.values()) {
             client.sendData("UPDATE_ONLINE_LIST;" + onlineList);
         }
+    }
+
+    public Client getClientByUsername(String username) {
+        return clients.get(username);
+    }
+
+    public void broadcastOnlineListUpdate() {
+        String onlineList = getListUserOnline();
+        for (Client client : getAllClients()) {
+            client.sendData("UPDATE_ONLINE_LIST;" + onlineList);
+        }
+    }
+
+    private List<Client> getAllClients() {
+        return new ArrayList<>(clients.values());
     }
 }

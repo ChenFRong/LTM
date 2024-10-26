@@ -12,6 +12,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import run.ClientRun;
 import model.UserInfo;
 import javax.swing.table.DefaultTableModel;
@@ -299,24 +301,49 @@ public class HomeView extends JFrame {
 
     public void updateOnlineUsersList(List<UserInfo> onlineUsers) {
         SwingUtilities.invokeLater(() -> {
-            tableModel.setRowCount(0);
+            Set<String> updatedUsers = new HashSet<>();
+            List<Object[]> newRows = new ArrayList<>();
+            
+            // Tạo danh sách mới với người dùng mới ở đầu
             for (UserInfo user : onlineUsers) {
-                if (!user.getUsername().equals(ClientRun.socketHandler.getLoginUser())) {
-                    tableModel.addRow(new Object[]{user.getUsername(), user.getScore(), user.getWins()});
-                }
+                newRows.add(new Object[]{user.getUsername(), user.getScore(), user.getWins()});
+                updatedUsers.add(user.getUsername());
             }
+            
+            // Thêm lại những người dùng hiện tại không có trong danh sách mới
+            // for (int i = 0; i < tableModel.getRowCount(); i++) {
+            //     String username = (String) tableModel.getValueAt(i, 0);
+            //     if (!updatedUsers.contains(username)) {
+            //         newRows.add(new Object[]{
+            //             username,
+            //             tableModel.getValueAt(i, 1),
+            //             tableModel.getValueAt(i, 2)
+            //         });
+            //     }
+            // }
+            
+            // Cập nhật bảng với danh sách mới
+            tableModel.setRowCount(0);
+            for (Object[] row : newRows) {
+                tableModel.addRow(row);
+            }
+            
             if (onlineListDialog != null) {
                 onlineListDialog.setTitle("Danh sách người dùng online (" + tableModel.getRowCount() + ")");
                 if (onlineListDialog.isVisible()) {
                     onlineListDialog.repaint();
+                    onlineUsersTable.repaint(); // Thêm dòng này
                 }
             }
+            
+            System.out.println("Updated online users list. Count: " + tableModel.getRowCount());
         });
     }
 
     private void startChat(String selectedUser) {
-        // Implement chức năng trò chuyện ở đây
-        JOptionPane.showMessageDialog(onlineListDialog, "Bắt đầu trò chuyện với " + selectedUser);
+        ClientRun.socketHandler.inviteChat(selectedUser);
+        JOptionPane.showMessageDialog(this, "Đã gửi lời mời trò chuyện đến " + selectedUser);
+        onlineListDialog.setVisible(false); // Đóng dialog danh sách online
     }
 
 //    public void enableCreateRoom() {
@@ -333,3 +360,5 @@ public class HomeView extends JFrame {
 
    
 }
+
+
