@@ -14,6 +14,7 @@ public class UserModel implements Serializable {
     private int lose;
     private float avgCompetitor;
     private float avgTime;
+    private String role;
     
     public UserModel() { }
     
@@ -109,6 +110,14 @@ public class UserModel implements Serializable {
 
     public void setAvgTime(float avgTime) {
         this.avgTime = avgTime;
+    }
+    
+    public String getRole() {
+        return role;
+}
+
+    public void setRole(String role) {
+        this.role = role;
     }
 
     

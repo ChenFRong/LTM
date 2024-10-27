@@ -121,43 +121,45 @@ public class Client implements Runnable {
     }
 
     private void onReceiveLogin(String received) {
-        String[] splitted = received.split(";");
-        String username = splitted[1];
-        String password = splitted[2];
+    String[] splitted = received.split(";");
+    String username = splitted[1];
+    String password = splitted[2];
 
-        // Lấy kết quả đăng nhập từ UserController
-        String result = new UserController().login(username, password);
+    // Lấy kết quả đăng nhập từ UserController
+    String result = new UserController().login(username, password);
 
-        if (result.split(";")[0].equals("success")) {
-            setLoginUser(username);
-            System.out.println("Login successful. loginUser set to: " + getLoginUser());
-            
-            // Giả sử login trả về dạng "success;1000.0;5" với 1000.0 là điểm số, 5 là số trận thắng
-            String[] resultData = result.split(";");
-            float score = Float.parseFloat(resultData[2]);
-            int wins = Integer.parseInt(resultData[3]);
-            
-            // Thêm client vào danh sách quản lý client của server
-            ServerRun.clientManager.addClient(username, this);
-            
-            // Trả về thông tin đăng nhập theo định dạng: LOGIN;success;username;score;wins
-            sendData("LOGIN;success;" + username + ";" + score + ";" + wins);
-            logAction("LOGIN_SUCCESS");
-            
-            // Thêm log để kiểm tra
-            System.out.println("Login successful. loginUser set to: " + getLoginUser());
-        } else {
-            // Nếu đăng nhập thất bại, trả về thông báo lỗi
-            sendData("LOGIN;" + result); // result sẽ là "failed;Lý do thất bại"
-            logAction("LOGIN_FAILED");
-        }
+    if (result.split(";")[0].equals("success")) {
+        setLoginUser(username);
+        System.out.println("Login successful. loginUser set to: " + getLoginUser());
         
-        // Cập nhật danh sách người chơi online sau khi đăng nhập
-        handleGetListOnline();
+        // Giả sử login trả về dạng "success;username;1000.0;5;user" với role là user
+        String[] resultData = result.split(";");
+        float score = Float.parseFloat(resultData[2]);
+        int wins = Integer.parseInt(resultData[3]);
+        String role = resultData[4]; // Lấy giá trị role từ kết quả đăng nhập
         
-        // Thêm log để kiểm tra sau khi xử lý đăng nhập
-        System.out.println("After login processing, loginUser is: " + getLoginUser());
+        // Thêm client vào danh sách quản lý client của server
+        ServerRun.clientManager.addClient(username, this);
+        
+        // Trả về thông tin đăng nhập theo định dạng: LOGIN;success;username;score;wins;role
+        sendData("LOGIN;success;" + username + ";" + score + ";" + wins + ";" + role);
+        logAction("LOGIN_SUCCESS");
+        
+        // Thêm log để kiểm tra
+        System.out.println("Login successful. loginUser set to: " + getLoginUser());
+    } else {
+        // Nếu đăng nhập thất bại, trả về thông báo lỗi
+        sendData("LOGIN;" + result); // result sẽ là "failed;Lý do thất bại"
+        logAction("LOGIN_FAILED");
     }
+    
+    // Cập nhật danh sách người chơi online sau khi đăng nhập
+    handleGetListOnline();
+    
+    // Thêm log để kiểm tra sau khi xử lý đăng nhập
+    System.out.println("After login processing, loginUser is: " + getLoginUser());
+}
+
     
     private void onReceiveGetAllUsers() {
     // Lấy danh sách xếp hạng từ UserController

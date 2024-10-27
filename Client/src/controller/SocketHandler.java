@@ -197,20 +197,28 @@ public class SocketHandler {
     }
 
     private void onReceiveLogin(String received) {
-        String[] splitted = received.split(";");
-        String status = splitted[1];
+    String[] splitted = received.split(";");
+    String status = splitted[1];
 
-        if (status.equals("success")) {
-            this.loginUser = splitted[2];
-            this.score = Double.parseDouble(splitted[3]);
-            this.wins = Integer.parseInt(splitted[4]);
-            ClientRun.closeScene(ClientRun.SceneName.LOGIN);
-            ClientRun.openScene(ClientRun.SceneName.HOMEVIEW);
-        } else {
-            String failedMsg = splitted[2];
-            JOptionPane.showMessageDialog(ClientRun.loginView, failedMsg, "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
+    if (status.equals("success")) {
+        this.loginUser = splitted[2];
+        this.score = Double.parseDouble(splitted[3]);
+        this.wins = Integer.parseInt(splitted[4]);
+        String role = splitted[5]; // Lấy giá trị role từ kết quả đăng nhập
+        
+        // Kiểm tra hoặc lưu giá trị role nếu cần, ví dụ: this.role = role;
+        System.out.println("User role: " + role); // In ra role để kiểm tra
+        ClientRun.homeView.setUserRole(role);
+
+        // Đóng scene đăng nhập và mở HomeView
+        ClientRun.closeScene(ClientRun.SceneName.LOGIN);
+        ClientRun.openScene(ClientRun.SceneName.HOMEVIEW);
+    } else {
+        String failedMsg = splitted[2];
+        JOptionPane.showMessageDialog(ClientRun.loginView, failedMsg, "Lỗi", JOptionPane.ERROR_MESSAGE);
     }
+}
+
     
     private void onReceiveGetAllUsers(String received) {
         String[] splitted = received.split(";");

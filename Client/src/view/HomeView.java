@@ -32,6 +32,22 @@ public class HomeView extends JFrame {
     private JButton chatButton;
     private JButton rankButton;
     private JButton productManagementButton; // Declare the new button
+    
+     private String userRole; // Member variable to hold user role
+    // Other variables and constructor
+
+    public void setUserRole(String role) {
+        this.userRole = role;
+        updateUIForRole(); // Update the UI based on the role
+    }
+
+    private void updateUIForRole() {
+        if ("admin".equals(this.userRole)) {
+            productManagementButton.setVisible(true);
+        } else {
+            productManagementButton.setVisible(false);
+        }
+    }
 
 
     // Danh sách lưu trữ các phòng chơi
@@ -75,6 +91,8 @@ public class HomeView extends JFrame {
         winsLabel = new JLabel("Tổng số trận thắng: ");
         gbc.gridx = 1;
         contentPanel.add(winsLabel, gbc);
+        
+        
 
         // Tạo nút "Chơi với bạn"
         createRoomButton = new JButton("Chơi với bạn");
@@ -107,7 +125,8 @@ public class HomeView extends JFrame {
         rankButton = new JButton("Rank");
         topLeftPanel.add(rankButton);
         
-        productManagementButton = new JButton("Quản lý sản phẩm"); // Initialize the new button
+        productManagementButton = new JButton("Quản lý sản phẩm");
+        productManagementButton.setVisible(false); // Initially hidden
         topLeftPanel.add(productManagementButton);
         
         mainPanel.add(topLeftPanel, BorderLayout.WEST);

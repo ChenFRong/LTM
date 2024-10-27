@@ -34,7 +34,7 @@ public class UserController {
     // Hàm đăng nhập (giữ nguyên)
    public String login(String username, String password) {
     try (Connection con = getConnection()) {
-        String query = "SELECT username, password, score, win FROM users WHERE username = ? AND password = ?";
+        String query = "SELECT username, password, score, win, role FROM users WHERE username = ? AND password = ?";
         PreparedStatement ps = con.prepareStatement(query);
         ps.setString(1, username);
         ps.setString(2, password);
@@ -43,7 +43,8 @@ public class UserController {
         if (rs.next()) {
             float score = rs.getFloat("score");
             int wins = rs.getInt("win");
-            return String.format("success;%s;%f;%d", username, score, wins);
+            String role = rs.getString("role");  // Get the role field
+            return String.format("success;%s;%f;%d;%s", username, score, wins, role);
         } else {
             return "failed;Invalid username or password";
         }
