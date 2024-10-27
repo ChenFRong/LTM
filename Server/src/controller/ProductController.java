@@ -13,10 +13,10 @@ import model.ProductModel;
 
 public class ProductController {
     // SQL queries
-    private final String INSERT_PRODUCT = "INSERT INTO product (name, description, price, image_path) VALUES (?, ?, ?, ?)";
+    private final String INSERT_PRODUCT = "INSERT INTO product (name, description, price, imagePath) VALUES (?, ?, ?, ?)";
     private final String GET_PRODUCT = "SELECT * FROM product WHERE id = ?";
     private final String GET_ALL_PRODUCTS = "SELECT * FROM product";
-    private final String UPDATE_PRODUCT = "UPDATE product SET name = ?, description = ?, price = ?, image_path = ? WHERE id = ?";
+    private final String UPDATE_PRODUCT = "UPDATE product SET name = ?, description = ?, price = ?, imagePath = ? WHERE id = ?";
     private final String DELETE_PRODUCT = "DELETE FROM product WHERE id = ?";
     
     private Connection getConnection() throws SQLException {
@@ -67,7 +67,7 @@ public class ProductController {
                         r.getString("name"),
                         r.getString("description"),
                         r.getDouble("price"),
-                        r.getString("image_path")
+                        r.getString("imagePath")
                     );
                 }
             }
@@ -89,7 +89,7 @@ public class ProductController {
                     r.getString("name"),
                     r.getString("description"),
                     r.getDouble("price"),
-                    r.getString("image_path")
+                    r.getString("imagePath")
                 ));
             }
         } catch (SQLException e) {

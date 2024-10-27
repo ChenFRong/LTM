@@ -9,6 +9,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import Database.Config; // Import thông tin cấu hình từ file Config
 import model.UserModel;
+import java.util.List;
+import java.util.ArrayList;
+
 
 public class UserController {
 
@@ -16,6 +19,8 @@ public class UserController {
     private final String INSERT_USER = "INSERT INTO users (username, password, score, win, draw, lose, avgCompetitor, avgTime) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     private final String GET_INFO_USER = "SELECT username, score, win, draw, lose, avgCompetitor, avgTime FROM users WHERE username=?";
     private final String UPDATE_USER = "UPDATE users SET score = ?, win = ?, draw = ?, lose = ?, avgCompetitor = ?, avgTime = ? WHERE username = ?";
+    private final String GET_RANKING = "SELECT * FROM users ORDER BY score DESC";
+
     private Connection getConnection() throws SQLException {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -152,5 +157,33 @@ public class UserController {
             e.printStackTrace();
         }
         return null;
+    }
+    public List<UserModel> getAllUsers() {
+        List<UserModel> users = new ArrayList<>();
+
+        try (Connection con = getConnection()){
+            PreparedStatement p = con.prepareStatement(GET_RANKING);
+
+            ResultSet r = p.executeQuery();
+            while (r.next()) {
+                UserModel user = new UserModel();
+                user.setUserName(r.getString("username"));
+                user.setScore(r.getFloat("score"));
+                user.setWin(r.getInt("win"));
+                user.setDraw(r.getInt("draw"));
+                user.setLose(r.getInt("lose"));
+                user.setAvgCompetitor(r.getFloat("avgCompetitor"));
+                user.setAvgTime(r.getFloat("avgTime"));
+
+                // Thêm user vào danh sách
+                users.add(user);
+            }
+            r.close();
+            p.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return users;
     }
 }

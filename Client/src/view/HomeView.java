@@ -30,6 +30,9 @@ public class HomeView extends JFrame {
     private JList<String> onlineUsersList;
     private DefaultListModel<String> onlineUsersModel;
     private JButton chatButton;
+    private JButton rankButton;
+    private JButton productManagementButton; // Declare the new button
+
 
     // Danh sách lưu trữ các phòng chơi
     private List<GameRoom> gameRooms = new ArrayList<>();
@@ -100,7 +103,37 @@ public class HomeView extends JFrame {
         JPanel topLeftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         onlineListButton = new JButton("Danh sách online");
         topLeftPanel.add(onlineListButton);
+        
+        rankButton = new JButton("Rank");
+        topLeftPanel.add(rankButton);
+        
+        productManagementButton = new JButton("Quản lý sản phẩm"); // Initialize the new button
+        topLeftPanel.add(productManagementButton);
+        
         mainPanel.add(topLeftPanel, BorderLayout.WEST);
+        
+        rankButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Call the method to get all users' ranking data from the server
+                ClientRun.socketHandler.getAllUsers();
+
+                // Open the RankView to display the ranking information
+                RankView rankView = new RankView();
+//                rankView.setVisible(true);
+            }
+        });
+        
+        productManagementButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Call the method to get all products from the server
+                ClientRun.socketHandler.getAllProducts(); // Make sure you have implemented this method in your socket handler
+
+                // Open the ProductManagementView to display the product information
+                ProductView productView = new ProductView();
+            }
+        });
 
         // Thêm ActionListener cho nút danh sách online
         onlineListButton.addActionListener(new ActionListener() {

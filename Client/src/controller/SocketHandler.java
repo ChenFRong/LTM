@@ -102,6 +102,21 @@ public class SocketHandler {
                     case "ASK_PLAY_AGAIN":
                         onReceiveAskPlayAgain(received);
                         break;
+                    case "GET_ALL_USERS":
+                        onReceiveGetAllUsers(received);
+                        break;
+                    case "GET_ALL_PRODUCTS":
+                        onReceiveGetAllProducts(received);
+                        break;
+                    case "INSERT_PRODUCT":
+                        onProductAdded(received);
+                        break;
+                    case "UPDATE_PRODUCT":
+                        onProductUpdated(received);
+                        break;
+                    case "DELETE_PRODUCT":
+                        onProductDeleted(received);
+                        break;    
                         
 // Bạn có thể thêm các trường hợp khác nếu cần
                 }
@@ -135,6 +150,29 @@ public class SocketHandler {
 
     public void joinRoom(String roomCode) {
         sendData("JOIN_ROOM;" + roomCode);
+    }
+    
+    public void getAllUsers() {
+        sendData("GET_ALL_USERS");
+    }
+    
+    public void getAllProducts() {
+        sendData("GET_ALL_PRODUCTS");
+    }
+    
+     public void addProduct(String name, String description, double price, String image_path) {
+        String data = "INSERT_PRODUCT" + ";" + name + ";" + price + ";" + description + ";" + image_path;
+        sendData(data);
+    }
+
+    public void updateProduct(int id, String name,  String description, double price, String image_path) {
+        String data = "UPDATE_PRODUCT" + ";" + id + ";" + name + ";" + description + ";" + price + ";" + image_path;
+        sendData(data);
+    }
+
+    public void deleteProduct(int id) {
+        String data = "DELETE_PRODUCT" + ";" + id;
+        sendData(data);
     }
 
     public void quickMatch() {
@@ -173,6 +211,114 @@ public class SocketHandler {
             JOptionPane.showMessageDialog(ClientRun.loginView, failedMsg, "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
+    
+    private void onReceiveGetAllUsers(String received) {
+        String[] splitted = received.split(";");
+        String status = splitted[1];
+        System.out.println("test" + splitted[splitted.length - 1]);
+    if ("success".equals(status)) {
+        // Làm sạch bảng trước khi thêm dữ liệu mới
+        ClientRun.rankView.clearRankTable();
+        int rank = 1;
+        for (int i = 2; i < splitted.length; i += 7) {
+            // Kiểm tra xem có đủ phần tử không
+            if (i + 7 <= splitted.length) {
+                System.out.println("username" + splitted[i]); 
+                String username = splitted[i];
+                String score = splitted[i + 1];
+                String wins = splitted[i + 2];
+                String draws = splitted[i + 3];
+                String losses = splitted[i + 4];
+                String avgCompetitor = splitted[i + 5];
+                String avgTime = splitted[i + 6];
+
+               
+                ClientRun.rankView.setListUsers(rank, username, score, wins, draws, losses, avgCompetitor, avgTime);
+                rank++;
+            } else {
+                System.out.println("Không đủ dữ liệu cho chỉ số: " + i);
+            }
+        }
+
+        // Hiển thị RankView
+        ClientRun.rankView.setVisible(true);
+//        ClientRun.openScene(ClientRun.SceneName.RANKVIEW);
+        } else {
+            System.out.println("Lỗi: " + splitted[2]); // Nếu không thành công, in ra thông báo lỗi
+        }
+    }
+    
+    public void onReceiveGetAllProducts(String received) {
+    String[] splitted = received.split(";");
+    String status = splitted[1];
+        System.out.println("test" + received);
+    if ("success".equals(status)) {
+        // Clear existing products in the table
+        ClientRun.productView.clearProductTable();
+        
+        for (int i = 2; i < splitted.length; i += 5) {
+            if (i + 5 <= splitted.length) {
+                String id = splitted[i];
+                String name = splitted[i + 1];
+                String price = splitted[i + 3];
+                String description = splitted[i + 2];
+                String imagePath = splitted[i + 4];
+
+                // Call method to add product to the ProductManagementView
+                ClientRun.productView.setListProducts(id, name, price, description, imagePath);
+            }
+        }
+                ClientRun.productView.setVisible(true);
+
+    } else {
+        System.out.println("Error: " + splitted[2]); // Handle error
+    }
+}
+
+    private void onProductAdded(String received) {
+        // Xử lý thông báo sản phẩm đã được thêm
+        String[] splitted = received.split(";");
+        String status = splitted[1];
+
+        if (status.equals("failed")) {
+            // hiển thị lỗi
+            String failedMsg = splitted[2];
+            JOptionPane.showMessageDialog(ClientRun.productView, failedMsg, "Lỗi", JOptionPane.ERROR_MESSAGE);
+
+        } else if (status.equals("success")) {
+            JOptionPane.showMessageDialog(ClientRun.productView, "Sản phẩm đã được thêm thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private void onProductUpdated(String received) {
+        // Xử lý thông báo sản phẩm đã được cập nhật
+        String[] splitted = received.split(";");
+        String status = splitted[1];
+
+        if (status.equals("failed")) {
+            // hiển thị lỗi
+            String failedMsg = splitted[2];
+            JOptionPane.showMessageDialog(ClientRun.productView, failedMsg, "Lỗi", JOptionPane.ERROR_MESSAGE);
+
+        } else if (status.equals("success")) {
+            JOptionPane.showMessageDialog(ClientRun.productView, "Sản phẩm đã được cập nhật thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private void onProductDeleted(String received) {
+        String[] splitted = received.split(";");
+        String status = splitted[1];
+
+        if (status.equals("failed")) {
+            // hiển thị lỗi
+            String failedMsg = splitted[2];
+            JOptionPane.showMessageDialog(ClientRun.productView, failedMsg, "Lỗi", JOptionPane.ERROR_MESSAGE);
+
+        } else if (status.equals("success")) {
+            JOptionPane.showMessageDialog(ClientRun.productView, "Sản phẩm đã được xóa thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
 
     private void onReceiveRegister(String received) {
         String[] splitted = received.split(";");

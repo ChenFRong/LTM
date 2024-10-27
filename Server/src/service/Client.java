@@ -11,6 +11,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import run.ServerRun;
 import model.ProductModel;
+import model.UserModel;
+import java.util.List;
+import controller.ProductController;
+
+
+
 
 public class Client implements Runnable {
     private Socket socket;
@@ -76,6 +82,22 @@ public class Client implements Runnable {
                     case "ASK_PLAY_AGAIN":
                         onReceiveAskPlayAgain(received);
                         break;
+                    case "GET_ALL_USERS":
+                        onReceiveGetAllUsers();
+                        break;
+                    case "INSERT_PRODUCT":
+                        addProduct(received); // Giả sử dữ liệu sản phẩm nằm ở phần thứ hai
+                        break;
+                    case "UPDATE_PRODUCT":
+                        updateProduct(received); // Giả sử dữ liệu sản phẩm nằm ở phần thứ hai
+                        break;
+                    case "DELETE_PRODUCT":
+                        deleteProduct(received); // Giả sử ID sản phẩm nằm ở phần thứ hai
+                        break;
+                    case "GET_ALL_PRODUCTS":
+                        onReceiveGetAllProducts();
+                        break;
+                    
                 }
                 
                 System.out.println("After processing " + type + ", loginUser is: " + getLoginUser());
@@ -136,6 +158,129 @@ public class Client implements Runnable {
         // Thêm log để kiểm tra sau khi xử lý đăng nhập
         System.out.println("After login processing, loginUser is: " + getLoginUser());
     }
+    
+    private void onReceiveGetAllUsers() {
+    // Lấy danh sách xếp hạng từ UserController
+        List<UserModel> users = new UserController().getAllUsers();
+
+        // Xây dựng dữ liệu để gửi lại cho client
+        StringBuilder result = new StringBuilder("GET_ALL_USERS;success;");
+
+        for (UserModel user : users) {
+            result.append(user.getUserName()).append(";")
+                  .append(user.getScore()).append(";")
+                  .append(user.getWin()).append(";")
+                  .append(user.getDraw()).append(";")
+                  .append(user.getLose()).append(";")
+                  .append(user.getAvgCompetitor()).append(";")
+                  .append(user.getAvgTime()).append(";");
+        }
+
+        // Gửi danh sách người dùng về cho client
+        sendData(result.toString());
+    }
+    
+    private void onReceiveGetAllProducts() {
+    // Retrieve the list of products from ProductController
+        List<ProductModel> products = new ProductController().getAllProducts();
+
+        // Build the data to send back to the client
+        StringBuilder result = new StringBuilder("GET_ALL_PRODUCTS;success;");
+
+        for (ProductModel product : products) {
+            result.append(product.getId()).append(";")
+                  .append(product.getName()).append(";")
+                  .append(product.getDescription()).append(";")
+                  .append(product.getPrice()).append(";")
+                  .append(product.getImagePath()).append(";"); // Assuming you want to send the imagePath too
+        }
+
+        // Send the list of products back to the client
+        sendData(result.toString());
+    }
+    private void addProduct(String productData) throws IOException {
+    String[] data = productData.split(";");
+    if (data.length >= 4) { // Kiểm tra độ dài dữ liệu để tránh lỗi
+        try {
+            // Đảm bảo rằng dữ liệu tách đúng thứ tự: name, description, price, imagePath
+            String name = data[1];
+            String description = data[3];
+            double price = Double.parseDouble(data[2]);
+            String imagePath = data[4];
+            
+            ProductModel product = new ProductModel(0, name, description, price, imagePath);
+            String res = new ProductController().addProduct(product);
+            
+            // Kiểm tra kết quả từ addProduct và gửi phản hồi về client
+            if (res.startsWith("success")) {
+                dos.writeUTF("PRODUCT_ADDED:" + product.getId());
+            } else {
+                dos.writeUTF("ERROR: Failed to add product");
+            }
+        } catch (NumberFormatException e) {
+            dos.writeUTF("ERROR: Invalid price format");
+        } catch (IOException e) {
+            dos.writeUTF("ERROR: " + e.getMessage());
+        }
+    } else {
+        dos.writeUTF("ERROR: Invalid product data format");
+    }
+}
+
+
+    private void updateProduct(String productData) throws IOException {
+    String[] data = productData.split(";");
+    if (data.length >= 3) { // Ensure that there are exactly 3 elements in the input
+        try {
+            int id = Integer.parseInt(data[1]);
+            String name = data[2];
+            String description = data[3];
+            double price = Double.parseDouble(data[4]);
+            String imagePath = data[5]; // Parse the price
+            
+            // Create a ProductModel object with the given data
+            ProductModel product = new ProductModel(id, name, description, price, imagePath);
+
+            ProductController productController = new ProductController();
+            String res = productController.updateProduct(product);
+            
+            // Check the result from updateProduct and send response to client
+            if (res.startsWith("success")) {
+                dos.writeUTF("PRODUCT_UPDATED");
+            } else {
+                dos.writeUTF("ERROR: Failed to update product");
+            }
+        } catch (NumberFormatException e) {
+            dos.writeUTF("ERROR: Invalid price format");
+        } catch (IOException e) {
+            dos.writeUTF("ERROR: " + e.getMessage());
+        }
+    } else {
+        dos.writeUTF("ERROR: Invalid product data format");
+    }
+}
+
+    private void deleteProduct(String productData) throws IOException {
+         String[] data = productData.split(";");
+    try {
+        int id = Integer.parseInt(data[1]); // Parse the product ID
+        ProductController productController = new ProductController();
+        
+        // Assuming deleteProduct returns a string indicating success or failure
+        String res = productController.deleteProduct(id);
+        
+        // Check the result and send response to client
+        if (res.startsWith("success")) {
+            dos.writeUTF("PRODUCT_DELETED");
+        } else {
+            dos.writeUTF("ERROR: Failed to delete product");
+        }
+    } catch (NumberFormatException e) {
+        dos.writeUTF("ERROR: Invalid product ID format");
+    } catch (IOException e) {
+        dos.writeUTF("ERROR: " + e.getMessage());
+    }
+}
 
     private void handleRegister(String received) {
         String[] splitted = received.split(";");

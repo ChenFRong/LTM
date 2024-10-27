@@ -5,10 +5,12 @@ import view.ConnectServer;
 import view.LoginView;
 import view.RegisterView;
 import view.HomeView;
+import view.RankView;
 import view.PlaywithFriend;
 import java.util.HashMap;
 import view.GameRoom;
 import java.util.Map;
+import view.ProductView;
 
 public class ClientRun{
     public enum SceneName {
@@ -16,7 +18,10 @@ public class ClientRun{
         LOGIN,
         REGISTER,
         HOMEVIEW,
-        PLAYWITHFRIEND
+        PLAYWITHFRIEND,
+        RANKVIEW,
+        PRODUCTVIEW
+
     }
 
     // scenes
@@ -25,6 +30,8 @@ public class ClientRun{
     public static RegisterView registerView;
     public static HomeView homeView;
     public static PlaywithFriend playWithFriendView;
+    public static RankView rankView;
+    public static ProductView productView;
 
     // controller 
     public static SocketHandler socketHandler;
@@ -44,6 +51,8 @@ public class ClientRun{
         registerView = new RegisterView();
         homeView = new HomeView();
         playWithFriendView = new PlaywithFriend();
+        rankView = new RankView();   // Initialize RankView
+        productView = new ProductView();
     }
 
     public static void openScene(SceneName sceneName) {
@@ -74,6 +83,14 @@ public class ClientRun{
                     playWithFriendView.setVisible(true);
                     playWithFriendView.setUsername(username);
                     break;
+                case RANKVIEW:
+                    rankView = new RankView();
+                    rankView.setVisible(true);
+                    break;
+                case PRODUCTVIEW:
+                    productView = new ProductView();
+                    productView.setVisible(true);
+                    break;
                 default:
                     break;
             }
@@ -98,7 +115,13 @@ public class ClientRun{
                     break;
                 case PLAYWITHFRIEND:
                     playWithFriendView.dispose();
-                    break;   
+                    break;
+                case RANKVIEW:
+                    rankView.dispose();
+                    break;
+                case PRODUCTVIEW:
+                    productView.dispose();
+                    break;
                 default:
                     break;
             }
@@ -112,6 +135,8 @@ public class ClientRun{
         if (registerView != null) registerView.dispose();
         if (homeView != null) homeView.dispose();
         if(playWithFriendView !=null)playWithFriendView.dispose();
+        if(rankView !=null)rankView.dispose();
+        if(productView !=null)productView.dispose();
     }
 
     public static void addGameRoom(String roomCode, GameRoom gameRoom) {
