@@ -2,6 +2,13 @@
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
-        <group/>
+        <group>
+            <file>file:/E:/PTITProjects/LTM_LY/LTM/Server/src/controller/ProductController.java</file>
+            <file>file:/E:/PTITProjects/LTM_LY/LTM/Server/src/model/UserModel.java</file>
+            <file>file:/E:/PTITProjects/LTM_LY/LTM/Server/src/controller/UserController.java</file>
+            <file>file:/E:/PTITProjects/LTM_LY/LTM/Server/src/service/Client.java</file>
+            <file>file:/E:/PTITProjects/LTM_LY/LTM/Server/src/model/ProductModel.java</file>
+            <file>file:/E:/PTITProjects/LTM_LY/LTM/Server/src/run/ServerRun.java</file>
+        </group>
     </open-files>
 </project-private>
