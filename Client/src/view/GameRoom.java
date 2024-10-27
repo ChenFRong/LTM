@@ -223,7 +223,7 @@ public class GameRoom extends javax.swing.JFrame {
             playAgainPanel.setVisible(true);
             resultLabel.setText(msg);
             guessInput.setVisible(false);
-            waitingTimerLabel.setText("00:30"); // Đặt thời gian ban đầu
+            waitingTimerLabel.setText("00:25"); // Đặt thời gian ban đầu
             waitingReplyClient(); // Bắt đầu đếm ngược
         });
     }
@@ -234,7 +234,7 @@ public class GameRoom extends javax.swing.JFrame {
     }
 
     private void waitingReplyClient() {
-        waitingClientTimer = new CountDownTimer(30);
+        waitingClientTimer = new CountDownTimer(25);
         waitingClientTimer.setTimerCallBack(
             null,
             (Callable) () -> {
@@ -397,20 +397,36 @@ public class GameRoom extends javax.swing.JFrame {
             dialog.setVisible(true);
         });
     }
-    public void showGameOver(String winner, double scoreClient1, double scoreClient2, String nameClient1, String nameClient2) {
-        SwingUtilities.invokeLater(() -> {
-            String message = String.format("Kết thúc trò chơi!\nNgười thắng: %s\n\nTổng điểm:\n%s: %.2f\n%s: %.2f",
-                    winner, nameClient1, scoreClient1, nameClient2, scoreClient2);
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            JOptionPane.showMessageDialog(this, message, "Kết thúc trò chơi", JOptionPane.INFORMATION_MESSAGE);
-            showAskPlayAgain("Bạn có muốn chơi lại không?");          
-        });
-    }
+    //    public void showGameOver(String winner, double scoreClient1, double scoreClient2, String nameClient1, String nameClient2) {
+//        SwingUtilities.invokeLater(() -> {
+//            String message = String.format("Kết thúc trò chơi!\nNgười thắng: %s\n\nTổng điểm:\n%s: %.2f\n%s: %.2f",
+//                    winner, nameClient1, scoreClient1, nameClient2, scoreClient2);
+//            
+//            try {
+//                Thread.sleep(3000);// đông cứng EDTgaay hiện tượng giao diện không phản hồi 
+////                JOptionPane.showMessageDialog(this, message, "Kết thúc trò chơi", JOptionPane.INFORMATION_MESSAGE);
+////                showAskPlayAgain("Bạn có muốn chơi lại không?"); 
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//            JOptionPane.showMessageDialog(this, message, "Kết thúc trò chơi", JOptionPane.INFORMATION_MESSAGE);
+//            showAskPlayAgain("Bạn có muốn chơi lại không?");          
+//        });
+//    }
 
+
+
+    public void showGameOver(String winner, double scoreClient1, double scoreClient2, String nameClient1, String nameClient2) {
+        String message = String.format("Kết thúc trò chơi!\nNgười thắng: %s\n\nTổng điểm:\n%s: %.2f\n%s: %.2f",
+            winner, nameClient1, scoreClient1, nameClient2, scoreClient2);
+    
+        Timer timer = new Timer(3000, (e) -> {
+            JOptionPane.showMessageDialog(this, message, "Kết thúc trò chơi", JOptionPane.INFORMATION_MESSAGE);
+            showAskPlayAgain("Bạn có muốn chơi lại không?");
+        });
+        timer.setRepeats(false);
+        timer.start();
+}
     public String getGuessInput() {
         return guessInput.getText();
     }
@@ -479,21 +495,30 @@ public class GameRoom extends javax.swing.JFrame {
         );
 
         if (confirm == JOptionPane.YES_OPTION) {
+            // Dừng tất cả các timer
+            if (matchTimer != null) {
+                matchTimer.cancel();
+                matchTimer = null;
+            }
+            if (waitingClientTimer != null) {
+                waitingClientTimer.cancel();
+                waitingClientTimer = null;
+            }
+
             // Gửi thông báo cho đối thủ
             if (opponentName != null && !opponentName.isEmpty()) {
                 ClientRun.socketHandler.sendLeaveInGame(opponentName);
             }
 
-            // Dừng các timer nếu đang chạy
-            if (matchTimer != null) {
-                matchTimer.cancel();
-            }
-            if (waitingClientTimer != null) {
-                waitingClientTimer.cancel();
-            }
-
-            // Đóng phòng game
+            // Đóng phòng game và xóa tất cả các tham chiếu
             closeRoom();
+            ClientRun.removeGameRoom(roomCode);
+            
+            // Chuyển về màn hình chính
+            SwingUtilities.invokeLater(() -> {
+                ClientRun.openScene(ClientRun.SceneName.HOMEVIEW);
+                ((HomeView) ClientRun.homeView).enableQuickMatch();
+            });
         }
     }
 }

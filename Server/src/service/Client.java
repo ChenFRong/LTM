@@ -552,6 +552,10 @@ public class Client implements Runnable {
                 return;
             }
 
+            // Đảm bảo rằng cả hai người chơi đều rời khỏi phòng
+            room.getClient1().setJoinedRoom(null);
+            room.getClient2().setJoinedRoom(null);
+
             // Gửi thông báo cho người chơi còn lại kèm thông tin điểm
             opponent.sendData("RECEIVE_LEAVE_INGAME;" + leavingUser + ";AUTO;" 
                 + client1Name + ";" + String.format("%.1f", finalScoreClient1) + ";"
@@ -564,6 +568,9 @@ public class Client implements Runnable {
             // Xóa phòng
             room.deleteRoom();
             ServerRun.roomManager.remove(room);
+
+            // Gửi thông báo cập nhật danh sách phòng cho tất cả người chơi (nếu cần)
+            //ServerRun.clientManager.broadcastRoomList();
         }
     }
 }

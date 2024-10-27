@@ -203,15 +203,33 @@ public class Room {
     }
     
     public void deleteRoom() {
+        if (matchTimer != null) {
+            matchTimer.cancel();
+            matchTimer = null;
+        }
         if (waitingTimer != null) {
-            waitingTimer.cancel(); // Hủy bỏ bộ đếm thời gian
+            waitingTimer.cancel();
             waitingTimer = null;
         }
         client1.setJoinedRoom(null);
         client1.setcCompetitor(null);
         client2.setJoinedRoom(null);
         client2.setcCompetitor(null);
-        ServerRun.roomManager.remove(this);
+        // Thêm bất kỳ logic giải phóng tài nguyên nào khác nếu cần
+        
+        // Reset các biến trạng thái của phòng
+        gameStarted = false;
+        currentProduct = null;
+        priceGuessClient1 = 0;
+        priceGuessClient2 = 0;
+        hasGuessedClient1 = false;
+        hasGuessedClient2 = false;
+        playAgainC1 = null;
+        playAgainC2 = null;
+        currentRound = 0;
+        isGameOver = false;
+        scoreClient1 = 0;
+        scoreClient2 = 0;
     }
     
     public void resetRoom() {
