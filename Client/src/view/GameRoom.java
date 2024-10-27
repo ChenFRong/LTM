@@ -389,7 +389,6 @@ public class GameRoom extends javax.swing.JFrame {
             dialog.setVisible(true);
         });
     }
-
     public void showGameOver(String winner, double scoreClient1, double scoreClient2, String nameClient1, String nameClient2) {
         SwingUtilities.invokeLater(() -> {
             String message = String.format("Kết thúc trò chơi!\nNgười thắng: %s\n\nTổng điểm:\n%s: %.2f\n%s: %.2f",
@@ -464,6 +463,7 @@ public class GameRoom extends javax.swing.JFrame {
     
     public void setStateHostRoom () {
         answer = false;
+        clearguessInput();
         startButton.setVisible(true);
         waitingLabel.setVisible(false);
     }
@@ -471,7 +471,7 @@ public class GameRoom extends javax.swing.JFrame {
     public void setStateUserInvited () {
         
         answer = false;
-        guessInput.setText("");
+        clearguessInput();
         startButton.setVisible(false);
         waitingLabel.setVisible(true);
     }
@@ -483,16 +483,7 @@ public class GameRoom extends javax.swing.JFrame {
         });
     }
 
-    // public void setStateUserInvited () {
-    //     answer = false;
-    //     startButton.setVisible(false);
-    //     waitingLabel.setVisible(true);
-    // }
-
-    // public void onPlayAgainTimeout() {
-    //     SwingUtilities.invokeLater(() -> {
-    //         hideAskPlayAgain();
-    //         JOptionPane.showMessageDialog(this, "Hết thời gian chờ phản hồi chơi lại.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-    //     });
-    // }
+     private void clearguessInput() {
+         guessInput.setText("");
+     }
 }

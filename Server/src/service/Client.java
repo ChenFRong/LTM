@@ -25,6 +25,8 @@ public class Client implements Runnable {
     private String loginUser;
     private Room joinedRoom;
     private Client cCompetitor;
+    private double score;
+    private int wins;
 
     public Client(Socket socket) throws IOException {
         this.socket = socket;
@@ -98,6 +100,24 @@ public class Client implements Runnable {
                         onReceiveGetAllProducts();
                         break;
                     
+                    case "INVITE_CHAT":
+                        handleInviteChat(received);
+                        break;
+                    case "ACCEPT_CHAT":
+                        handleAcceptChat(received);
+                        break;
+                    case "DECLINE_CHAT":
+                        handleDeclineChat(received);
+                        break;
+                    case "CHAT_MESSAGE":
+                        handleChatMessage(received);
+                        break;
+                    case "OPEN_CHAT_ROOM":
+                        handleOpenChatRoom(received);
+                        break;
+                    case "EXIT_CHAT_ROOM":
+                        handleExitChatRoom(received);
+                        break;
                 }
                 
                 System.out.println("After processing " + type + ", loginUser is: " + getLoginUser());
@@ -147,9 +167,11 @@ public class Client implements Runnable {
         
         // Thêm log để kiểm tra
         System.out.println("Login successful. loginUser set to: " + getLoginUser());
+            //broadcastOnlineList();
+            ServerRun.clientManager.broadcastOnlineList();
     } else {
         // Nếu đăng nhập thất bại, trả về thông báo lỗi
-        sendData("LOGIN;" + result); // result sẽ là "failed;Lý do thất bại"
+        sendData("LOGIN;" + result); // result sẽ là "failed;L do thất bại"
         logAction("LOGIN_FAILED");
     }
     
@@ -296,8 +318,9 @@ public class Client implements Runnable {
     }
 
     private void handleGetListOnline() {
-        String result = ServerRun.clientManager.getListUseOnline();
-        sendData("GET_LIST_ONLINE;" + result);
+        String result = ServerRun.clientManager.getListUserOnline();
+        sendData("GET_LIST_ONLINE;success;" + result);
+        System.out.println("Sent online list: " + result); // Thêm log này
     }
 
     private void handleCreateRoom() {
@@ -419,6 +442,7 @@ public class Client implements Runnable {
         this.loginUser = null;
         sendData("LOGOUT_SUCCESS");
         System.out.println("User logged out: " + this.getLoginUser());
+        ServerRun.clientManager.broadcastOnlineList();
     }
 
     private void onReceiveStartGame(String received) {
@@ -531,5 +555,98 @@ public class Client implements Runnable {
 
     public void setcCompetitor(Client cCompetitor) {
         this.cCompetitor = cCompetitor;
+    }
+
+    // private void broadcastOnlineList() {
+    //     String onlineList = ServerRun.clientManager.getListUserOnline();
+    //     for (Client client : ServerRun.clientManager.getAllClients()) {
+    //         client.sendData("UPDATE_ONLINE_LIST;" + onlineList);
+    //     }
+    // }
+
+    // Thêm getters cho score và wins
+    public double getScore() {
+        return score;
+    }
+
+    public int getWins() {
+        return wins;
+    }
+
+    private void handleInviteChat(String received) {
+        String[] parts = received.split(";");
+        String inviter = parts[1];
+        String invitedUser = parts[2];
+        Client invitedClient = ServerRun.clientManager.getClientByUsername(invitedUser);
+        if (invitedClient != null) {
+            invitedClient.sendData("CHAT_INVITATION;" + inviter);
+        }
+    }
+
+    private void handleAcceptChat(String received) {
+        String[] parts = received.split(";");
+        String accepter = parts[1];
+        String inviter = parts[2];
+        Client inviterClient = ServerRun.clientManager.getClientByUsername(inviter);
+        if (inviterClient != null) {
+            inviterClient.sendData("CHAT_ACCEPTED;" + accepter);
+        }
+    }
+
+    private void handleDeclineChat(String received) {
+        String[] parts = received.split(";");
+        String decliner = parts[1];
+        String inviter = parts[2];
+        Client inviterClient = ServerRun.clientManager.getClientByUsername(inviter);
+        if (inviterClient != null) {
+            inviterClient.sendData("CHAT_DECLINED;" + decliner);
+        }
+    }
+
+    private void handleChatMessage(String received) {
+        String[] parts = received.split(";");
+        String sender = parts[1];
+        String recipient = parts[2];
+        String message = parts[3];
+        Client recipientClient = ServerRun.clientManager.getClientByUsername(recipient);
+        if (recipientClient != null) {
+            recipientClient.sendData("CHAT_MESSAGE;" + sender + ";" + recipient + ";" + message);
+        }
+    }
+
+    private void handleOpenChatRoom(String received) {
+        String[] parts = received.split(";");
+        String sender = parts[1];
+        String recipient = parts[2];
+        
+        Client recipientClient = ServerRun.clientManager.getClientByUsername(recipient);
+        if (recipientClient != null) {
+            recipientClient.sendData("OPEN_CHAT_ROOM;" + sender);
+            recipientClient.setInChatRoom(true);
+        }
+        this.setInChatRoom(true);
+        sendData("OPEN_CHAT_ROOM;" + recipient);
+    }
+
+    private void handleExitChatRoom(String received) {
+        String[] parts = received.split(";");
+        String exitingUser = parts[1];
+        String otherUser = parts[2];
+        Client otherClient = ServerRun.clientManager.getClientByUsername(otherUser);
+        if (otherClient != null && otherClient.isInChatRoom) {
+            otherClient.sendData("EXIT_CHAT_ROOM;" + exitingUser);
+        }
+        this.setInChatRoom(false);
+    }
+
+    // Thêm phương thức này để kiểm tra xem người dùng có đang trong phòng chat hay không
+    private boolean isInChatRoom = false;
+
+    public boolean isInChatRoom() {
+        return isInChatRoom;
+    }
+
+    public void setInChatRoom(boolean inChatRoom) {
+        this.isInChatRoom = inChatRoom;
     }
 }

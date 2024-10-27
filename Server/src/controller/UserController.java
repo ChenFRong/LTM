@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 
+
 public class UserController {
 
     private final String CHECK_USER = "SELECT * FROM users WHERE username = ? limit 1";
@@ -186,5 +187,41 @@ public class UserController {
         }
 
         return users;
+    }
+
+    public double getUserScore(String username) {
+        String query = "SELECT score FROM users WHERE username = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            
+            pstmt.setString(1, username);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble("score");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting user score: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0.0; // Trả về 0 nếu không tìm thấy người dùng hoặc có lỗi
+    }
+
+    public int getUserWins(String username) {
+        String query = "SELECT win FROM users WHERE username = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            
+            pstmt.setString(1, username);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("win");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting user wins: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0; // Trả về 0 nếu không tìm thấy người dùng hoặc có lỗi
     }
 }

@@ -6,13 +6,20 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import model.UserInfo;
 import run.ClientRun;
 import view.GameRoom;
 import view.HomeView;
+import view.ChatRoom;
+//import model.UserInfo;
 
 public class SocketHandler {
     private Socket s;
@@ -24,6 +31,7 @@ public class SocketHandler {
     private int wins = 0; // Thêm biến để lưu số lần thắng
     private String roomIdPresent = null; // Thêm biến này
     
+    private boolean isLoggingOut = false;
 
     public String connect(String addr, int port) {
         try {
@@ -117,6 +125,30 @@ public class SocketHandler {
                     case "DELETE_PRODUCT":
                         onProductDeleted(received);
                         break;    
+                    case "GET_LIST_ONLINE":
+                        onReceiveGetListOnline(received);
+                        break;
+                    case "UPDATE_ONLINE_LIST":
+                        onReceiveUpdateOnlineList(received);
+                        break;
+                    case "CHAT_INVITATION":
+                        onReceiveChatInvitation(received);
+                        break;
+                    case "CHAT_ACCEPTED":
+                        onChatAccepted(received);
+                        break;
+                    case "CHAT_DECLINED":
+                        onChatDeclined(received);
+                        break;
+                    case "CHAT_MESSAGE":
+                        onReceiveChatMessage(received);
+                        break;
+                    case "OPEN_CHAT_ROOM":
+                        onReceiveOpenChatRoom(received);
+                        break;
+                    case "EXIT_CHAT_ROOM":
+                        onReceiveExitChatRoom(received);
+                        break;
                         
 // Bạn có thể thêm các trường hợp khác nếu cần
                 }
@@ -180,10 +212,13 @@ public class SocketHandler {
     }
 
     public void logout() {
-        sendData("LOGOUT");
-        this.loginUser = null;
-        this.score = 0;
-        this.wins = 0;
+        if (!isLoggingOut) {
+            isLoggingOut = true;
+            sendData("LOGOUT");
+            this.loginUser = null;
+            this.score = 0;
+            this.wins = 0;
+        }
     }
 
     private void sendData(String data) {
@@ -432,7 +467,7 @@ public class SocketHandler {
     private void onJoinFailed(String received) {
         String errorMessage = received.split(";")[1];
         SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(null, errorMessage, "Tham gia phòng thất bại", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, errorMessage, "Tham gia phòng thất bi", JOptionPane.ERROR_MESSAGE);
         });
     }
 
@@ -466,14 +501,18 @@ public class SocketHandler {
 
     private void onLogoutSuccess() {
         System.out.println("Logout successful");
-        // C�� thể thêm xử lý bổ sung nếu cần
+        isLoggingOut = false;
+        SwingUtilities.invokeLater(() -> {
+            ClientRun.closeScene(ClientRun.SceneName.HOMEVIEW);
+            ClientRun.openScene(ClientRun.SceneName.LOGIN);
+        });
     }
 
     public void backToHome() {
         // Gửi thông báo đến server (nếu cần)
         sendData("BACK_TO_HOME");
 
-        // Đóng tất cả các cửa sổ hiện tại (nếu cần)
+        // Đóng tt cả các cửa sổ hiện tại (nếu cần)
         ClientRun.closeAllScene();
 
         // Mở cửa sổ Home mới
@@ -496,7 +535,7 @@ public class SocketHandler {
                     gameRoom.setRoomId(roomIdPresent);
                     gameRoom.setProductInfo(productName, imagePath);
                     gameRoom.setStartGame(30);
-                    gameRoom.setRound(round); // Cập nhật số lượt chơi
+                    gameRoom.setRound(round); // Cập nhật s lượt chơi
                 } else {
                     System.out.println("Error: GameRoom not found for room ID " + roomId);
                 }
@@ -644,6 +683,10 @@ public class SocketHandler {
     public void declinePlayAgain() {
         sendData("ASK_PLAY_AGAIN;" +"NO"+";"+ loginUser + ";" + roomIdPresent);
     }
+    
+     public void getListOnline() {
+        sendData("GET_LIST_ONLINE");
+    }
 
     private void onJoinRoomSuccess(String received) {
         String[] parts = received.split(";");
@@ -692,5 +735,170 @@ public class SocketHandler {
         if (gameRoom != null) {
             gameRoom.onPlayAgainTimeout();
         }
+    }
+
+    private void onReceiveGetListOnline(String received) {
+        System.out.println("Received online list data: " + received);
+        String[] splitted = received.split(";");
+        if (splitted[1].equals("success")) {
+            List<UserInfo> onlineUsers = new ArrayList<>();
+            if (splitted.length > 2 && !splitted[2].equals("EMPTY")) {
+                for (int i = 2; i < splitted.length; i++) {
+                    String[] userInfo = splitted[i].split(",");
+                    if (userInfo.length == 3) {
+                        String username = userInfo[0];
+                        double score = Double.parseDouble(userInfo[1]);
+                        int wins = Integer.parseInt(userInfo[2]);
+                        if (!username.equals(loginUser)) {  // Không thêm người dùng hiện tại vào danh sách
+                            onlineUsers.add(new UserInfo(username, score, wins));
+                        }
+                    }
+                }
+            }
+            System.out.println("Parsed online users: " + onlineUsers.size());
+            SwingUtilities.invokeLater(() -> {
+                if (ClientRun.homeView != null) {
+                    ((HomeView) ClientRun.homeView).updateOnlineUsersList(onlineUsers);
+                }
+            });
+        } else {
+            JOptionPane.showMessageDialog(ClientRun.homeView, "Có lỗi khi lấy danh sách người dùng online", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void onReceiveUpdateOnlineList(String received) {
+        String[] parts = received.split(";");
+        List<UserInfo> onlineUsers = new ArrayList<>();
+        if (parts.length > 1 && !parts[1].equals("EMPTY")) {
+            for (int i = 1; i < parts.length; i++) {
+                    String[] userInfo = parts[i].split(",");
+                    if (userInfo.length == 3) {
+                        String username = userInfo[0];
+                        double score = Double.parseDouble(userInfo[1]);
+                        int wins = Integer.parseInt(userInfo[2]);
+                        if (!username.equals(loginUser)) {  // Không thêm người dùng hiện tại vào danh sách
+                            onlineUsers.add(new UserInfo(username, score, wins));
+                        }
+                    }
+                }
+        }
+        
+        SwingUtilities.invokeLater(() -> {
+            if (ClientRun.homeView != null) {
+                ((HomeView) ClientRun.homeView).updateOnlineUsersList(onlineUsers);
+            }
+        });
+    }
+
+    public void inviteChat(String invitedUser) {
+        sendData("INVITE_CHAT;" + loginUser + ";" + invitedUser);
+    }
+
+    public void acceptChatInvitation(String inviter) {
+        sendData("ACCEPT_CHAT;" + loginUser + ";" + inviter);
+    }
+
+    public void declineChatInvitation(String inviter) {
+        sendData("DECLINE_CHAT;" + loginUser + ";" + inviter);
+    }
+
+    private void onReceiveChatInvitation(String received) {
+        String[] parts = received.split(";");
+        String inviter = parts[1];
+        SwingUtilities.invokeLater(() -> {
+            int option = JOptionPane.showConfirmDialog(
+                null,
+                inviter + " đã mời bạn trò chuyện. Bạn có chấp nhận không?",
+                "Lời mời trò chuyện",
+                JOptionPane.YES_NO_OPTION
+            );
+            if (option == JOptionPane.YES_OPTION) {
+                acceptChatInvitation(inviter);
+            } else {
+                declineChatInvitation(inviter);
+            }
+        });
+    }
+
+    private void onChatAccepted(String received) {
+        String[] parts = received.split(";");
+        String acceptedUser = parts[1];
+        SwingUtilities.invokeLater(() -> {
+            int option = JOptionPane.showConfirmDialog(
+                null,
+                acceptedUser + " đã đồng ý trò chuyện cùng bạn. Bạn có muốn mở phòng chat không?",
+                "Xác nhận mở phòng chat",
+                JOptionPane.YES_NO_OPTION
+            );
+            if (option == JOptionPane.YES_OPTION) {
+                openChatRoom(acceptedUser);
+            }
+        });
+    }
+
+    private void onChatDeclined(String received) {
+        String[] parts = received.split(";");
+        String declinedUser = parts[1];
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(null, declinedUser + " đã từ chối lời mời trò chuyện của bạn.");
+        });
+    }
+
+    public void openChatRoom(String otherUser) {
+        sendData("OPEN_CHAT_ROOM;" + loginUser + ";" + otherUser);
+        SwingUtilities.invokeLater(() -> {
+            ChatRoom chatRoom = ChatRoom.getInstance(loginUser, otherUser);
+            chatRoom.setOtherUserLeft(false);
+            chatRoom.loadSavedMessages();
+            chatRoom.setVisible(true);
+        });
+    }
+
+    private void onReceiveOpenChatRoom(String received) {
+        String[] parts = received.split(";");
+        String otherUser = parts[1];
+        SwingUtilities.invokeLater(() -> {
+            ClientRun.closeScene(ClientRun.SceneName.HOMEVIEW);
+            ChatRoom chatRoom = ChatRoom.getInstance(loginUser, otherUser);
+            chatRoom.setOtherUserJoined(true);
+            chatRoom.setVisible(true);
+        });
+    }
+
+    public void sendChatMessage(String recipient, String message) {
+        sendData("CHAT_MESSAGE;" + loginUser + ";" + recipient + ";" + message);
+    }
+
+    private void onReceiveChatMessage(String received) {
+        String[] parts = received.split(";");
+        String sender = parts[1];
+        String message = parts[3];
+        SwingUtilities.invokeLater(() -> {
+            ChatRoom chatRoom = ChatRoom.getInstance(loginUser, sender);
+            if (chatRoom != null) {
+                if (chatRoom.isVisible()) {
+                    chatRoom.addMessage(sender, message, false);
+                } else {
+                    // Nếu cửa sổ chat không hiển thị, chỉ lưu tin nhắn mà không hiển thị
+                    chatRoom.saveMessage(sender, message);
+                }
+            }
+        });
+    }
+
+    public void exitChatRoom(String otherUser) {
+        sendData("EXIT_CHAT_ROOM;" + loginUser + ";" + otherUser);
+    }
+
+    private void onReceiveExitChatRoom(String received) {
+        String[] parts = received.split(";");
+        String exitedUser = parts[1];
+        SwingUtilities.invokeLater(() -> {
+            ChatRoom chatRoom = ChatRoom.getInstance(loginUser, exitedUser);
+            if (chatRoom != null) {
+                chatRoom.setOtherUserLeft(true);
+                chatRoom.displayExitMessage(exitedUser);
+            }
+        });
     }
 }
