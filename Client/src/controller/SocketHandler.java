@@ -134,6 +134,12 @@ public class SocketHandler {
                     case "EXIT_CHAT_ROOM":
                         onReceiveExitChatRoom(received);
                         break;
+                    case "SEND_LEAVE_INGAME":
+                        sendLeaveInGame(received);
+                        break;
+                    case "RECEIVE_LEAVE_INGAME":
+                        receiveLeaveInGame(received);
+                        break;
                         
 // Bạn có thể thêm các trường hợp khác nếu cần
                 }
@@ -735,4 +741,88 @@ public class SocketHandler {
             }
         });
     }
+    
+    // Phương thức gửi thông điệp rời phòng
+    public void sendLeaveInGame(String opponentName) {
+        if (s != null && !s.isClosed()) { // Kiểm tra kết nối
+            sendData("SEND_LEAVE_INGAME;" + loginUser + ";" + opponentName + ";" + roomIdPresent);
+        }
+        //sendData("LEAVE_GAME;" + loginUser + ";" + opponentName + ";" + roomIdPresent);
+        GameRoom gameRoom = ClientRun.findGameRoom(roomIdPresent);
+        if (gameRoom != null) {
+            gameRoom.closeRoom();
+            ClientRun.openScene(ClientRun.SceneName.HOMEVIEW);
+            ((HomeView) ClientRun.homeView).enableQuickMatch();
+        }
+        roomIdPresent = null;
+    }
+
+    /*// Phương thức xử lý khi nhận được thông báo rời phòng
+    private void receiveLeaveInGame(String received) {
+        String[] parts = received.split(";");
+        if (parts.length >= 2) {
+            String leavingUser = parts[1];
+            SwingUtilities.invokeLater(() -> {
+                GameRoom gameRoom = ClientRun.findGameRoom(roomIdPresent);
+                if (gameRoom != null) {
+                    // Hiển thị thông báo
+                    JOptionPane.showMessageDialog(gameRoom, 
+                        leavingUser + " đã rời khỏi trận đấu!", 
+                        "Thông báo", 
+                        JOptionPane.INFORMATION_MESSAGE);
+
+                    // Đóng phòng game và trở về màn hình chính
+                    gameRoom.closeRoom();
+                    ClientRun.openScene(ClientRun.SceneName.HOMEVIEW);
+                    ((HomeView) ClientRun.homeView).enableQuickMatch();
+                    roomIdPresent = null;
+                }
+            });
+        }
+    }
+     */
+    private void receiveLeaveInGame(String received) {
+        String[] parts = received.split(";");
+        //double scoreClient1 = 0.0;
+        //double scoreClient2 = 0.0;
+        if (parts.length >= 6) { // Kiểm tra đủ thông tin: người rời đi, auto flag, tên người chơi 1, điểm 1, tên người chơi 2, điểm 2
+            String leavingUser = parts[1];
+            // boolean isAutoLeave = "AUTO".equals(parts[2]);
+            String client1Name = parts[3];
+            double scoreClient1 = Double.parseDouble(parts[4].replace(",", "."));
+            String client2Name = parts[5];
+            double scoreClient2 = Double.parseDouble(parts[6].replace(",", "."));
+
+            SwingUtilities.invokeLater(() -> {
+                // Tạo thông báo chi tiết
+                StringBuilder message = new StringBuilder();
+                message.append(leavingUser).append(" đã rời khỏi trận đấu!\n\n");
+                message.append("Kết quả cuối cùng:\n");
+                message.append(client1Name).append(": ").append(String.format("%.1f", scoreClient1)).append(" điểm\n");
+                message.append(client2Name).append(": ").append(String.format("%.1f", scoreClient2)).append(" điểm\n");
+                //message.append(client1Name).append(": ").append(String.format("%.1f", scoreClient1)).append(" điểm\n");
+                //message.append(client2Name).append(": ").append(String.format("%.1f", scoreClient2)).append(" điểm\n");
+                
+                // Xác định người thắng (người không rời đi)
+                String winner = leavingUser.equals(client1Name) ? client2Name : client1Name;
+                message.append("\nNgười thắng: ").append(winner);
+                System.out.println(message);
+                // Hiển thị thông báo
+                JOptionPane.showMessageDialog(null,
+                        message.toString(),
+                        "Thông báo",
+                        JOptionPane.INFORMATION_MESSAGE);
+
+                // Đóng phòng game và trở về màn hình chính
+                GameRoom gameRoom = ClientRun.findGameRoom(roomIdPresent);
+                if (gameRoom != null) {
+                    gameRoom.closeRoom();
+                    ClientRun.openScene(ClientRun.SceneName.HOMEVIEW);
+                    ((HomeView) ClientRun.homeView).enableQuickMatch();
+                    roomIdPresent = null;
+                }
+            });
+        }
+    }
 }
+

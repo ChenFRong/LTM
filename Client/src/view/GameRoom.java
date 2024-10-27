@@ -13,17 +13,14 @@ public class GameRoom extends javax.swing.JFrame {
     private String playerName;
     private String roomCode;
     private boolean isHost;
-     private String productName;
-        private String productImage;
-       private double totalScore = 0;
+    private String productName;
+    private String productImage;
+    private double totalScore = 0;
     private String opponentName;
     private CountDownTimer matchTimer;
     private CountDownTimer waitingClientTimer;
     private boolean answer = false;
     private int round = 0;
-
-    // Thêm khai báo biến roomId
-    
 
     // Components
     private JLabel roomIdLabel;
@@ -42,6 +39,7 @@ public class GameRoom extends javax.swing.JFrame {
     private JButton yesButton;
     private JButton noButton;
     private JLabel resultLabel;
+    private JButton outButton; 
 
 
     public GameRoom(String playerName, String roomCode, boolean isHost) {
@@ -77,6 +75,7 @@ public class GameRoom extends javax.swing.JFrame {
         yesButton = new JButton("Tiếp tục");
         noButton = new JButton("Dừng lại");
         resultLabel = new JLabel("Bạn có muốn chơi lại không?");
+        outButton = new JButton("Thoát trận đấu");
 
         // Set fonts
         Font labelFont = new Font("Roboto", Font.PLAIN, 18);
@@ -90,19 +89,28 @@ public class GameRoom extends javax.swing.JFrame {
         waitingLabel.setFont(new Font("Tahoma", Font.PLAIN, 18));
         resultLabel.setFont(new Font("Roboto", Font.BOLD, 14));
         waitingTimerLabel.setFont(new Font("Tahoma", Font.BOLD, 14));
+        outButton.setFont(labelFont);
 
         // Add action listeners
         startButton.addActionListener(this::startButtonActionPerformed);
         submitButton.addActionListener(this::submitButtonActionPerformed);
         yesButton.addActionListener(this::yesButtonActionPerformed);
         noButton.addActionListener(this::noButtonActionPerformed);
+        outButton.addActionListener(this::outButtonActionPerformed);
 
+        // Set background colors
+        startButton.setBackground(Color.GREEN);
+        submitButton.setBackground(Color.BLUE);
+        yesButton.setBackground(Color.ORANGE);
+        noButton.setBackground(Color.RED);
+        outButton.setBackground(new Color(255,215,0)); //Gold
+        
         // Layout
         setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
-
+/*
         gbc.gridx = 0; gbc.gridy = 0; add(roomIdLabel, gbc);
         gbc.gridy++; add(playerNameLabel, gbc);
         gbc.gridy++; add(opponentNameLabel, gbc);
@@ -133,7 +141,44 @@ public class GameRoom extends javax.swing.JFrame {
         inputPanel.add(guessInput);
         inputPanel.add(Box.createHorizontalGlue());
         add(inputPanel, gbc);
+*/
+gbc.gridx = 0; gbc.gridy = 0; add(roomIdLabel, gbc);
+        gbc.gridy++; add(playerNameLabel, gbc);
+        gbc.gridy++; add(opponentNameLabel, gbc);
+        gbc.gridy++; add(statusLabel, gbc);
+        gbc.gridy++; add(productLabel, gbc);
+       
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.X_AXIS));
+        inputPanel.add(guessInput);
+        inputPanel.add(Box.createHorizontalStrut(7));
+        add(inputPanel, gbc);
+        inputPanel.add(submitButton);
+        gbc.gridy++; add(inputPanel,gbc);
+        
+        gbc.gridy++; gbc.gridy++; add(timerLabel,gbc);
 
+        gbc.gridx = 1; gbc.gridy = 0; gbc.gridheight = 6;
+        add(imageLabel, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 2; gbc.gridheight = 1;
+        add(startButton, gbc);
+        //gbc.gridy++; add(submitButton, gbc);
+        gbc.gridy++; add(waitingLabel, gbc);
+
+        gbc.gridy++; add(playAgainPanel, gbc);
+        //gbc.gridy++; add(outButton, gbc);
+        gbc.gridx = 0; gbc.gridy = 6; add(guessInput, gbc);
+        gbc.gridx = 1; gbc.gridy = 10; gbc.anchor = GridBagConstraints.SOUTHEAST;
+        add(outButton, gbc);
+        
+        // PlayAgainPanel layout
+        playAgainPanel.setLayout(new FlowLayout());
+        playAgainPanel.add(resultLabel);
+        playAgainPanel.add(waitingTimerLabel);
+        playAgainPanel.add(yesButton);
+        playAgainPanel.add(noButton);
+        
         pack();
         setLocationRelativeTo(null);
     }
@@ -316,43 +361,12 @@ public class GameRoom extends javax.swing.JFrame {
         });
     }
 
-//    private void startTimer(int timeLimit) {
-//        if (matchTimer != null) {
-//            matchTimer.stop();
-//        }
-//        matchTimer = new CountDownTimer(timeLimit);
-//        matchTimer.setTimerCallBack(
-//            null,
-//            () -> {
-//                int currentTick = matchTimer.getCurrentTick();
-//                SwingUtilities.invokeLater(() -> {
-//                    timerLabel.setText("Thời gian: " + CustumDateTimeFormatter.secondsToMinutes(currentTick));
-//                });
-//                if (currentTick == 0) {
-//                    SwingUtilities.invokeLater(this::afterSubmit);
-//                }
-//                return null;
-//            },
-//            1
-//        );
-//        matchTimer.start();
-//    }
-
     public void showRoundResult(int round,String winner, double actualPrice, 
                                 double guessClient1, double guessClient2,
                                 double roundScoreClient1, double roundScoreClient2,
                                 double totalScoreClient1, double totalScoreClient2,
                                 String nameClient1, String nameClient2) {
-//        SwingUtilities.invokeLater(() -> {
-//            String message = String.format("Kết quả lượt chơi %d:\nNgười thắng: %s\nGiá thực: %.2f\n%s đoán: %.2f\n%s đoán: %.2f\n\nĐiểm lượt này:\n%s: %.2f\n%s: %.2f\n\nTổng điểm:\n%s: %.2f\n%s: %.2f",
-//                    round, winner, actualPrice,
-//                    guessClient1,  guessClient2,
-//                    roundScoreClient1, roundScoreClient2,
-//                    totalScoreClient1, totalScoreClient2,
-//                    
-//                      
-//            JOptionPane.showMessageDialog(this, message, "Kết quả lượt chơi", JOptionPane.INFORMATION_MESSAGE);
-//        });
+
           SwingUtilities.invokeLater(() -> {
             String message;
             message =String.format("Kết quả lượt chơi:%d\n",round);
@@ -455,4 +469,30 @@ public class GameRoom extends javax.swing.JFrame {
      private void clearguessInput() {
          guessInput.setText("");
      }
+     private void outButtonActionPerformed(ActionEvent evt) {
+        int confirm = JOptionPane.showConfirmDialog(
+            this,
+            "Bạn có chắc chắn muốn thoát trận đấu không?",
+            "Xác nhận thoát",
+            JOptionPane.YES_NO_OPTION
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            // Gửi thông báo cho đối thủ
+            if (opponentName != null && !opponentName.isEmpty()) {
+                ClientRun.socketHandler.sendLeaveInGame(opponentName);
+            }
+
+            // Dừng các timer nếu đang chạy
+            if (matchTimer != null) {
+                matchTimer.cancel();
+            }
+            if (waitingClientTimer != null) {
+                waitingClientTimer.cancel();
+            }
+
+            // Đóng phòng game
+            closeRoom();
+        }
+    }
 }
