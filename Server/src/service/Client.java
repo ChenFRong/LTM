@@ -96,6 +96,9 @@ public class Client implements Runnable {
                     case "EXIT_CHAT_ROOM":
                         handleExitChatRoom(received);
                         break;
+                    case "SEND_LEAVE_INGAME":
+                        handleLeaveGame(received);
+                        break;
                 }
                 
                 System.out.println("After processing " + type + ", loginUser is: " + getLoginUser());
@@ -132,7 +135,7 @@ public class Client implements Runnable {
             
             // Giả sử login trả về dạng "success;1000.0;5" với 1000.0 là điểm số, 5 là số trận thắng
             String[] resultData = result.split(";");
-            float score = Float.parseFloat(resultData[2]);
+            float score = Float.parseFloat(resultData[2].replace(",","."));
             int wins = Integer.parseInt(resultData[3]);
             
             // Thêm client vào danh sách quản lý client của server
@@ -506,5 +509,61 @@ public class Client implements Runnable {
 
     public void setInChatRoom(boolean inChatRoom) {
         this.isInChatRoom = inChatRoom;
+    }
+    
+    private void handleLeaveGame(String received) throws SQLException {
+        String[] parts = received.split(";");
+        String leavingUser = parts[1];
+        String opponentName = parts[2];
+        String roomId = parts[3];
+        Room room = ServerRun.roomManager.find(roomId);
+
+        if (room != null) {
+            // Lấy điểm hiện tại
+            String result = room.handleResultClient();
+            String[] resultParts = result.split(";");
+            double scoreClient1 = Float.parseFloat(resultParts[3]) ;
+            double scoreClient2 = Float.parseFloat(resultParts[4]) ;
+
+            // Xác định điểm cuối cùng (người rời đi nhận 0 điểm)
+            String client1Name = room.getClient1().getLoginUser();
+            String client2Name = room.getClient2().getLoginUser();
+            //double finalScoreClient1 = leavingUser.equals(client1Name) ? 0.0f : scoreClient1;
+            //double finalScoreClient2 = leavingUser.equals(client2Name) ? 0.0f : scoreClient2;
+            
+            double finalScoreClient1 = leavingUser.equals(client1Name) ? 0.0 : scoreClient1-0.5f;
+            double finalScoreClient2 = leavingUser.equals(client2Name) ? 0.0 : scoreClient2-0.5f;
+
+// Trừ 0.5 điểm cho người còn lại
+        /*if (leavingUser.equals(client1Name)) {
+        finalScoreClient2 -= 0.5; // Trừ điểm cho client2
+        } else {
+            finalScoreClient1 -= 0.5; // Trừ điểm cho client1
+        }
+
+// Đảm bảo điểm không âm (nếu cần)
+        finalScoreClient1 = Math.max(finalScoreClient1, 0);
+        finalScoreClient2 = Math.max(finalScoreClient2, 0);
+*/
+            // Tìm đối thủ
+            Client opponent = room.find(opponentName);
+            if (opponent == null) {
+                System.out.println("Opponent not found: " + opponentName);
+                return;
+            }
+
+            // Gửi thông báo cho người chơi còn lại kèm thông tin điểm
+            opponent.sendData("RECEIVE_LEAVE_INGAME;" + leavingUser + ";AUTO;" 
+                + client1Name + ";" + String.format("%.1f", finalScoreClient1) + ";"
+                + client2Name + ";" + String.format("%.1f", finalScoreClient2));
+            System.out.println("Sent RECEIVE_LEAVE_INGAME to opponent: " + opponentName);
+
+            // Cập nhật thống kê người chơi
+            room.userLeaveGame(leavingUser);
+
+            // Xóa phòng
+            room.deleteRoom();
+            ServerRun.roomManager.remove(room);
+        }
     }
 }

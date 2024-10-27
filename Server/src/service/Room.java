@@ -571,4 +571,78 @@ public class Room {
             e.printStackTrace();
         }
     }
+    
+    public void userLeaveInGame(String username) throws SQLException {
+        // Tính toán điểm hiện tại của ván đấu cho người ở lại
+        String result = handleResultClient();
+        String[] resultParts = result.split(";");
+        float currentScoreClient1 = Float.parseFloat(resultParts[3]); // Tổng điểm hiện tại của client1
+        float currentScoreClient2 = Float.parseFloat(resultParts[4]); // Tổng điểm hiện tại của client2
+        
+        //add
+        //UserModel user1 = new UserController().getUser(client1.getLoginUser());
+        //UserModel user2 = new UserController().getUser(client2.getLoginUser());
+
+        if (client1.getLoginUser().equals(username)) {
+            // Người chơi 1 rời đi
+            // Người chơi 1 nhận 0 điểm, người chơi 2 giữ nguyên điểm đã có
+            //UserModel user1 = new UserController().getUser(client1.getLoginUser());
+            //UserModel user2 = new UserController().getUser(client2.getLoginUser());
+            UserModel user1 = new UserController().getUser(client1.getLoginUser());
+            UserModel user2 = new UserController().getUser(client2.getLoginUser());
+        
+
+            //user2.setWin(user2.getWin() + 1); //đoạn này để tính thêm 0.5 điểm 1 trận thắng cho người ở lại phòng 
+            //user1.setLose(user1.getLose() + 1);
+
+            //đoạn này vì người 1 thoát trận, người 2 được cộng thêm 0.5 điểm 1 trận
+            float updateScoreClinet2 = currentScoreClient2 - 0.5f;
+            // Cập nhật điểm: người rời đi nhận 0, người ở lại giữ điểm hiện tại
+            updateUserStats(user1, user2, 0, updateScoreClinet2);
+            userLeaveInGame(client1.getLoginUser());
+            // Gửi LEAVE_GAME cho cả hai client
+            client1.sendData("LEAVE_GAME;" + username);
+            client2.sendData("LEAVE_GAME;" + username);
+
+        } else if (client2.getLoginUser().equals(username)) {
+            // Người chơi 2 rời đi
+            // Người chơi 2 nhận 0 điểm, người chơi 1 giữ nguyên điểm đã có
+            //UserModel user1 = new UserController().getUser(client1.getLoginUser());
+            //UserModel user2 = new UserController().getUser(client2.getLoginUser());
+            UserModel user1 = new UserController().getUser(client1.getLoginUser());
+            UserModel user2 = new UserController().getUser(client2.getLoginUser());
+
+            //user1.setWin(user1.getWin() + 1);
+            //user2.setLose(user2.getLose() + 1);
+            
+            userLeaveInGame(client2.getLoginUser());
+
+            // Cập nhật điểm: người rời đi nhận 0, người ở lại giữ điểm hiện tại
+            float updateScoreClinet1 = currentScoreClient1 - 0.5f;
+            updateUserStats(user1, user2, updateScoreClinet1, 0);
+            
+            // Gửi LEAVE_GAME cho cả hai client
+            client1.sendData("LEAVE_GAME;" + username);
+            client2.sendData("LEAVE_GAME;" + username);
+        }
+
+        // Cập nhật trạng thái phòng
+        isGameOver = true;
+
+        // Hủy các timer đang chạy
+        if (matchTimer != null) {
+            matchTimer.cancel();
+        }
+        if (waitingTimer != null) {
+            waitingTimer.cancel();
+        }
+
+        // Thông báo kết quả cho các người chơi còn lại
+        String winner = username.equals(client1.getLoginUser()) ? client2.getLoginUser() : client1.getLoginUser();
+        broadcast("GAME_OVER;success;" + winner + ";" 
+                + client1.getLoginUser() + ";" + client2.getLoginUser() + ";" 
+                + id + ";" 
+                + (username.equals(client1.getLoginUser()) ? 0 : currentScoreClient1) + ";" 
+                + (username.equals(client2.getLoginUser()) ? 0 : currentScoreClient2));
+    }
 }

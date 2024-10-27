@@ -13,5 +13,5 @@ package Database;
 public class Config {
 public static final String DB_URL = "jdbc:mysql://localhost:3306/btlltm?useSSL=false&allowPublicKeyRetrieval=true";
     public static final String DB_USERNAME = "root";
-    public static final String DB_PASSWORD = "nhung123456";
+    public static final String DB_PASSWORD = "2607";
 }

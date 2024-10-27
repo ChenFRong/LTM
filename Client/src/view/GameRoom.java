@@ -13,14 +13,15 @@ public class GameRoom extends javax.swing.JFrame {
     private String playerName;
     private String roomCode;
     private boolean isHost;
-     private String productName;
-        private String productImage;
-       private double totalScore = 0;
+    private String productName;
+    private String productImage;
+    private double totalScore = 0;
     private String opponentName;
     private CountDownTimer matchTimer;
     private CountDownTimer waitingClientTimer;
     private boolean answer = false;
     private int round = 0;
+    private JButton outButton; 
 
     // Thêm khai báo biến roomId
     
@@ -77,6 +78,8 @@ public class GameRoom extends javax.swing.JFrame {
         yesButton = new JButton("Tiếp tục");
         noButton = new JButton("Dừng lại");
         resultLabel = new JLabel("Bạn có muốn chơi lại không?");
+        outButton = new JButton("Thoát trận đấu");
+
 
         // Set fonts
         Font labelFont = new Font("Roboto", Font.PLAIN, 18);
@@ -96,43 +99,55 @@ public class GameRoom extends javax.swing.JFrame {
         submitButton.addActionListener(this::submitButtonActionPerformed);
         yesButton.addActionListener(this::yesButtonActionPerformed);
         noButton.addActionListener(this::noButtonActionPerformed);
-
-        // Layout
+        outButton.addActionListener(this::outButtonActionPerformed);
+        
+// Set background colors
+    startButton.setBackground(Color.GREEN);
+    submitButton.setBackground(Color.BLUE);
+    yesButton.setBackground(Color.ORANGE);
+    noButton.setBackground(Color.RED);
+    outButton.setBackground(new Color(255,215,0)); //Gold
         setLayout(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
-
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.insets = new Insets(10, 10, 10, 10);
+    gbc.anchor = GridBagConstraints.WEST;
+        
         gbc.gridx = 0; gbc.gridy = 0; add(roomIdLabel, gbc);
         gbc.gridy++; add(playerNameLabel, gbc);
         gbc.gridy++; add(opponentNameLabel, gbc);
         gbc.gridy++; add(statusLabel, gbc);
         gbc.gridy++; add(productLabel, gbc);
-        gbc.gridy++; add(guessInput, gbc);
-        gbc.gridy++; add(timerLabel, gbc);
+ 
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.X_AXIS));
+        inputPanel.add(guessInput);
+        inputPanel.add(Box.createHorizontalStrut(7));
+        add(inputPanel, gbc);
+        inputPanel.add(submitButton);
+        gbc.gridy++; add(inputPanel,gbc);
+        
+        gbc.gridy++; gbc.gridy++; add(timerLabel,gbc);
 
         gbc.gridx = 1; gbc.gridy = 0; gbc.gridheight = 6;
         add(imageLabel, gbc);
 
         gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 2; gbc.gridheight = 1;
         add(startButton, gbc);
-        gbc.gridy++; add(submitButton, gbc);
+        //gbc.gridy++; add(submitButton, gbc);
         gbc.gridy++; add(waitingLabel, gbc);
 
         gbc.gridy++; add(playAgainPanel, gbc);
-
+        //gbc.gridy++; add(outButton, gbc);
+        gbc.gridx = 0; gbc.gridy = 6; add(guessInput, gbc);
+        gbc.gridx = 1; gbc.gridy = 10; gbc.anchor = GridBagConstraints.SOUTHEAST;
+        add(outButton, gbc);
+        
         // PlayAgainPanel layout
         playAgainPanel.setLayout(new FlowLayout());
         playAgainPanel.add(resultLabel);
         playAgainPanel.add(waitingTimerLabel);
         playAgainPanel.add(yesButton);
         playAgainPanel.add(noButton);
-
-        JPanel inputPanel = new JPanel();
-        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.X_AXIS));
-        inputPanel.add(guessInput);
-        inputPanel.add(Box.createHorizontalGlue());
-        add(inputPanel, gbc);
 
         pack();
         setLocationRelativeTo(null);
@@ -455,4 +470,30 @@ public class GameRoom extends javax.swing.JFrame {
      private void clearguessInput() {
          guessInput.setText("");
      }
+     private void outButtonActionPerformed(ActionEvent evt) {
+        int confirm = JOptionPane.showConfirmDialog(
+            this,
+            "Bạn có chắc chắn muốn thoát trận đấu không?",
+            "Xác nhận thoát",
+            JOptionPane.YES_NO_OPTION
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            // Gửi thông báo cho đối thủ
+            if (opponentName != null && !opponentName.isEmpty()) {
+                ClientRun.socketHandler.sendLeaveInGame(opponentName);
+            }
+
+            // Dừng các timer nếu đang chạy
+            if (matchTimer != null) {
+                matchTimer.cancel();
+            }
+            if (waitingClientTimer != null) {
+                waitingClientTimer.cancel();
+            }
+
+            // Đóng phòng game
+            closeRoom();
+        }
+    }
 }
